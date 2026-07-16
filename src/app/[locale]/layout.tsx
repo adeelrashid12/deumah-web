@@ -36,7 +36,7 @@ export default async function LocaleLayout({
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
 
   return (
-    <html lang={locale} dir={dir} className={`${poppins.className} h-full antialiased`}>
+    <html lang={locale} dir={dir} className={`${poppins.className} h-full antialiased overflow-x-hidden`}>
       <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] overflow-x-hidden">
         <NextIntlClientProvider messages={messages}>
           {children}

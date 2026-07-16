@@ -375,12 +375,12 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
+          <div className="flex md:grid md:grid-cols-5 gap-4 md:gap-6 overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 snap-x snap-mandatory scrollbar-none">
             {CATEGORIES.map((cat) => (
               <div
                 key={cat.id}
                 onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
-                className={`group bg-white rounded-2xl border overflow-hidden flex flex-col cursor-pointer transition duration-300 ${
+                className={`group bg-white rounded-2xl border overflow-hidden flex flex-col cursor-pointer transition duration-300 w-[140px] sm:w-[170px] md:w-auto flex-shrink-0 snap-start ${
                   selectedCategory === cat.id
                     ? 'border-[#10B981] ring-4 ring-[#10B981]/15 shadow-md shadow-emerald-500/5'
                     : 'border-slate-200/80 shadow-sm hover:shadow-md hover:border-[#10B981]/40 hover:shadow-emerald-500/5'

@@ -272,7 +272,7 @@ export default function HomePage() {
       </section>
 
       {/* Main Grid */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 flex-1 flex flex-col gap-16 relative w-full max-w-full overflow-x-hidden">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 flex-1 flex flex-col gap-16 relative w-full max-w-full">
         
         {/* Quick action buttons */}
         <div className="-mt-16 sm:-mt-24 w-full min-w-0 bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-[#e2e8f0] shadow-xl relative z-25 grid grid-cols-4 divide-x rtl:divide-x-reverse divide-[#e2e8f0] overflow-hidden">

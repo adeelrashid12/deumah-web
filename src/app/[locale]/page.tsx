@@ -275,57 +275,57 @@ export default function HomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 flex-1 flex flex-col gap-16 relative">
         
         {/* Quick action buttons */}
-        <div className="-mt-16 sm:-mt-24 bg-white rounded-[2rem] border border-[#e2e8f0] shadow-xl relative z-25 grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-[#e2e8f0] md:divide-x rtl:divide-x-reverse overflow-hidden">
+        <div className="-mt-16 sm:-mt-24 bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-[#e2e8f0] shadow-xl relative z-25 grid grid-cols-4 divide-x rtl:divide-x-reverse divide-[#e2e8f0] overflow-hidden">
           
           {/* Rent */}
-          <div className="group py-10 px-6 flex flex-col items-center text-center gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
-            <div className="w-16 h-16 rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
+            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
+              <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M7 11L9 4h6l2 7M4 11h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2zM6 19v2M18 19v2" />
                 <circle cx="6" cy="15" r="1.2" fill="currentColor" />
                 <circle cx="18" cy="15" r="1.2" fill="currentColor" />
               </svg>
             </div>
-            <h3 className="text-base font-extrabold text-[#0F172A] mt-3">{locale === 'en' ? 'Rent' : 'تأجير'}</h3>
-            <p className="text-xs text-slate-700 font-semibold max-w-[170px] leading-relaxed mt-1">{locale === 'en' ? 'Rent anything you need' : 'استأجر أي شيء تحتاجه'}</p>
+            <h3 className="text-xs sm:text-base font-extrabold text-[#0F172A] mt-1.5 sm:mt-3">{locale === 'en' ? 'Rent' : 'تأجير'}</h3>
+            <p className="hidden sm:block text-xs text-slate-700 font-semibold max-w-[170px] leading-relaxed mt-1">{locale === 'en' ? 'Rent anything you need' : 'استأجر أي شيء تحتاجه'}</p>
           </div>
 
           {/* Buy */}
-          <div className="group py-10 px-6 flex flex-col items-center text-center gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
-            <div className="w-16 h-16 rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
+            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
+              <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="9" cy="21" r="1" />
                 <circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
               </svg>
             </div>
-            <h3 className="text-base font-extrabold text-[#0F172A] mt-3">{locale === 'en' ? 'Buy' : 'شراء'}</h3>
-            <p className="text-xs text-slate-700 font-semibold max-w-[170px] leading-relaxed mt-1">{locale === 'en' ? 'Buy with confidence' : 'اشتري بكل ثقة وأمان'}</p>
+            <h3 className="text-xs sm:text-base font-extrabold text-[#0F172A] mt-1.5 sm:mt-3">{locale === 'en' ? 'Buy' : 'شراء'}</h3>
+            <p className="hidden sm:block text-xs text-slate-700 font-semibold max-w-[170px] leading-relaxed mt-1">{locale === 'en' ? 'Buy with confidence' : 'اشتري بكل ثقة وأمان'}</p>
           </div>
 
           {/* Sell */}
-          <div className="group py-10 px-6 flex flex-col items-center text-center gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
-            <div className="w-16 h-16 rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
+            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
+              <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01" />
               </svg>
             </div>
-            <h3 className="text-base font-extrabold text-[#0F172A] mt-3">{locale === 'en' ? 'Sell' : 'بيع'}</h3>
-            <p className="text-xs text-slate-700 font-semibold max-w-[170px] leading-relaxed mt-1">{locale === 'en' ? 'List and sell easily' : 'اعرض أشيائك وبعها بسهولة'}</p>
+            <h3 className="text-xs sm:text-base font-extrabold text-[#0F172A] mt-1.5 sm:mt-3">{locale === 'en' ? 'Sell' : 'بيع'}</h3>
+            <p className="hidden sm:block text-xs text-slate-700 font-semibold max-w-[170px] leading-relaxed mt-1">{locale === 'en' ? 'List and sell easily' : 'اعرض أشيائك وبعها بسهولة'}</p>
           </div>
 
           {/* Delivery */}
-          <div className="group py-10 px-6 flex flex-col items-center text-center gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
-            <div className="w-16 h-16 rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
+            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
+              <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
                 <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
                 <circle cx="5.5" cy="18.5" r="2.5" />
                 <circle cx="18.5" cy="18.5" r="2.5" />
               </svg>
             </div>
-            <h3 className="text-base font-extrabold text-[#0F172A] mt-3">{locale === 'en' ? 'Delivery' : 'توصيل'}</h3>
-            <p className="text-xs text-slate-700 font-semibold max-w-[170px] leading-relaxed mt-1">{locale === 'en' ? 'Fast and safe delivery' : 'توصيل سريع وآمن'}</p>
+            <h3 className="text-xs sm:text-base font-extrabold text-[#0F172A] mt-1.5 sm:mt-3">{locale === 'en' ? 'Delivery' : 'توصيل'}</h3>
+            <p className="hidden sm:block text-xs text-slate-700 font-semibold max-w-[170px] leading-relaxed mt-1">{locale === 'en' ? 'Fast and safe delivery' : 'توصيل سريع وآمن'}</p>
           </div>
         </div>
 

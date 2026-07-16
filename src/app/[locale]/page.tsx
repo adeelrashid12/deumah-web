@@ -275,7 +275,7 @@ export default function HomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 flex-1 flex flex-col gap-16 relative">
         
         {/* Quick action buttons */}
-        <div className="-mt-16 sm:-mt-24 bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-[#e2e8f0] shadow-xl relative z-25 grid grid-cols-4 divide-x rtl:divide-x-reverse divide-[#e2e8f0] overflow-hidden">
+        <div className="-mt-16 sm:-mt-24 w-full min-w-0 bg-white rounded-[1.5rem] sm:rounded-[2rem] border border-[#e2e8f0] shadow-xl relative z-25 grid grid-cols-4 divide-x rtl:divide-x-reverse divide-[#e2e8f0] overflow-hidden">
           
           {/* Rent */}
           <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
@@ -375,7 +375,7 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div className="flex md:grid md:grid-cols-5 gap-4 md:gap-6 overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 snap-x snap-mandatory scrollbar-none">
+          <div className="w-full min-w-0 flex md:grid md:grid-cols-5 gap-4 md:gap-6 overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 snap-x snap-mandatory scrollbar-none">
             {CATEGORIES.map((cat) => (
               <div
                 key={cat.id}

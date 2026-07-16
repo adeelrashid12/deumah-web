@@ -37,7 +37,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} dir={dir} className={`${poppins.className} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A]">
+      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] overflow-x-hidden">
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

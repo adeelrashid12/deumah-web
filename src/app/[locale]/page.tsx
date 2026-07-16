@@ -279,8 +279,8 @@ export default function HomePage() {
           
           {/* Rent */}
           <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
-            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
-              <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M7 11L9 4h6l2 7M4 11h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2zM6 19v2M18 19v2" />
                 <circle cx="6" cy="15" r="1.2" fill="currentColor" />
                 <circle cx="18" cy="15" r="1.2" fill="currentColor" />
@@ -292,8 +292,8 @@ export default function HomePage() {
 
           {/* Buy */}
           <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
-            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
-              <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="9" cy="21" r="1" />
                 <circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
@@ -305,8 +305,8 @@ export default function HomePage() {
 
           {/* Sell */}
           <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
-            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
-              <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01" />
               </svg>
             </div>
@@ -316,8 +316,8 @@ export default function HomePage() {
 
           {/* Delivery */}
           <div className="group py-5 sm:py-10 px-2 sm:px-6 flex flex-col items-center text-center gap-1 sm:gap-2 hover:bg-slate-50/50 transition duration-200 cursor-pointer">
-            <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
-              <svg className="w-5 h-5 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 rounded-[0.75rem] sm:rounded-[1.25rem] bg-emerald-50 text-[#10B981] flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-[#10B981] group-hover:text-white transition duration-300">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
                 <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
                 <circle cx="5.5" cy="18.5" r="2.5" />

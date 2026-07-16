@@ -197,7 +197,7 @@ export default function HomePage() {
             <img 
               src={locale === 'ar' ? '/arabic logo without bg.png' : '/final logo without bg.png'} 
               alt="Deumah Logo" 
-              className="h-18 w-auto object-contain brightness-100" 
+              className="h-10 sm:h-18 w-auto object-contain brightness-100" 
             />
           </div>
 
@@ -212,15 +212,15 @@ export default function HomePage() {
           </nav>
 
           {/* Action Menu */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={toggleLanguage}
-              className="px-3 py-1.5 rounded-lg border border-slate-700 bg-[#162238] text-xs font-bold text-[#10B981] hover:bg-[#1f2f4c] transition cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-[#162238] text-[10px] sm:text-xs font-bold text-[#10B981] hover:bg-[#1f2f4c] transition cursor-pointer"
             >
               {locale === 'en' ? 'العربية' : 'English'}
             </button>
 
-            <button className="px-5 py-2.5 rounded-lg bg-[#10B981] hover:bg-[#0ea572] text-white text-xs font-black tracking-wide shadow-sm hover:-translate-y-0.5 transition cursor-pointer">
+            <button className="px-3.5 py-2 rounded-lg bg-[#10B981] hover:bg-[#0ea572] text-white text-[10px] sm:text-xs font-black tracking-wide shadow-sm hover:-translate-y-0.5 transition cursor-pointer">
               {locale === 'en' ? 'Sign In' : 'تسجيل الدخول'}
             </button>
           </div>
@@ -331,13 +331,13 @@ export default function HomePage() {
 
         {/* Category filtering tab control */}
         <div className="flex justify-center mt-6">
-          <div className="bg-slate-100 p-1.5 rounded-[1.5rem] flex gap-1 border border-slate-200/60 shadow-inner">
+          <div className="bg-slate-100 p-1.5 rounded-[1.25rem] sm:rounded-[1.5rem] flex gap-1 border border-slate-200/60 shadow-inner">
             <button
               onClick={() => {
                 setActiveTab('rent');
                 setSelectedCategory(null);
               }}
-              className={`px-10 py-3 rounded-2xl text-sm font-extrabold transition-all duration-300 cursor-pointer ${
+              className={`px-6 sm:px-10 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-300 cursor-pointer ${
                 activeTab === 'rent'
                   ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
                   : 'text-slate-500 hover:text-slate-800'
@@ -350,7 +350,7 @@ export default function HomePage() {
                 setActiveTab('sale');
                 setSelectedCategory(null);
               }}
-              className={`px-10 py-3 rounded-2xl text-sm font-extrabold transition-all duration-300 cursor-pointer ${
+              className={`px-6 sm:px-10 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-300 cursor-pointer ${
                 activeTab === 'sale'
                   ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
                   : 'text-slate-500 hover:text-slate-800'

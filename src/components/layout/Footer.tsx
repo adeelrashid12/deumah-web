@@ -15,7 +15,7 @@ export function Footer() {
       <div className="container-shell">
         
         {/* Main Grid: 6 columns */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-6 xl:gap-8 pb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 xl:gap-8 pb-10">
           
           {/* Column 1: Logo & Description */}
           <div className="flex flex-col gap-4">

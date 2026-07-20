@@ -1,1 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#087A3A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="10" fill="#fafafa"/>
+  <circle cx="12" cy="24" r="4" fill="#0288d1"/>
+  <circle cx="24" cy="24" r="4" fill="#4caf50"/>
+  <circle cx="36" cy="24" r="4" fill="#e91e63"/>
+</svg>

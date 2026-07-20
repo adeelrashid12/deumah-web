@@ -3,5 +3,91 @@
   "home":{"badge":"سوقك المحلي في اليمن","title":"تأجير. شراء. بيع.\nكل شيء في مكان واحد.","subtitle":"كل ما تحتاجه، في أي وقت، في أي مكان.","searchPlaceholder":"ماذا تبحث عنه؟","search":"بحث","trusted":"موثوق من آلاف المستخدمين","categories":"جميع التصنيفات","verified":"بائعين موثوقين","free":"انشر إعلانك","actions":{"rent":{"title":"تأجير","subtitle":"عقارات وسيارات والمزيد"},"buy":{"title":"شراء","subtitle":"شراء سلع جديدة ومستعملة"},"sell":{"title":"بيع","subtitle":"بيع أي شيء تملكه"},"delivery":{"title":"توصيل","subtitle":"توصيل سريع وآمن"}}},
   "categories":{"title":"تصفح الأقسام","subtitle":"ابدأ بالقسم الذي تحتاجه","vehicles":"المركبات","properties":"العقارات","electronics":"الإلكترونيات","furniture":"الأثاث والمنزل","services":"الخدمات","tools":"أدوات","fashion":"أزياء وإكسسوارات","kids":"أطفال ومواليد","sports":"هوايات ورياضة","more":"المزيد"},
   "featured":{"title":"أحدث الإعلانات","subtitle":"إعلانات رائجة بالقرب منك","items":{"0":{"title":"تويوتا لاند كروزر 2021","price":"٨٥ دولار / يوم","location":"صنعاء","category":"تأجير"},"1":{"title":"فيلا في شارع السبعين","price":"٩٥٠ دولار / شهر","location":"صنعاء","category":"تأجير"},"2":{"title":"كاميرا كانون 80D","price":"٤٥٠ دولار","location":"صنعاء","category":"بيع"},"3":{"title":"دراجة هوائية","price":"١٥ دولار / يوم","location":"صنعاء","category":"تأجير"},"4":{"title":"شقة في حي الوحدة","price":"٢٠٠ دولار / شهر","location":"صنعاء","category":"تأجير"},"5":{"title":"آيفون 14 برو ماكس","price":"٦٥٠ دولار","location":"صنعاء","category":"بيع"}}},
-  "footer":{"about":"سوق ثنائي اللغة للاستئجار والشراء والبيع في اليمن.","company":{"title":"الشركة","one":"عن دومه","two":"كيف يعمل","three":"تواصل معنا"},"support":{"title":"الدعم","one":"مركز المساعدة","two":"الأمان","three":"الإبلاغ عن مشكلة"},"legal":{"title":"قانوني","one":"الشروط","two":"الخصوصية","three":"ملفات الارتباط"}}
+  "footer":{"about":"سوق ثنائي اللغة للاستئجار والشراء والبيع في اليمن.","company":{"title":"الشركة","one":"عن دومه","two":"كيف يعمل","three":"تواصل معنا"},"support":{"title":"الدعم","one":"مركز المساعدة","two":"الأمان","three":"الإبلاغ عن مشكلة"},"legal":{"title":"قانوني","one":"الشروط","two":"الخصوصية","three":"ملفات الارتباط"}},
+
+  "Nav": {
+    "rent": "تأجير",
+    "buy": "شراء",
+    "sell": "بيع",
+    "delivery": "توصيل",
+    "services": "خدمات",
+    "more": "المزيد",
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "favorites": "المفضلة",
+    "notifications": "الإشعارات"
+  },
+  "Hero": {
+    "titleLine1": "تأجير. شراء. بيع.",
+    "titleLine2": "كل شيء في مكان واحد.",
+    "subtitle": "كل ما تحتاجه، في أي وقت، وفي أي مكان.",
+    "trusted": "موثوق من آلاف المستخدمين"
+  },
+  "Search": {
+    "category": "جميع التصنيفات",
+    "placeholder": "ماذا تبحث عنه؟",
+    "location": "صنعاء",
+    "button": "بحث"
+  },
+  "Actions": {
+    "rent": "تأجير",
+    "rentDescription": "ابحث عن أماكن وأشياء للتأجير",
+    "buy": "شراء",
+    "buyDescription": "اشترِ منتجات جديدة ومستعملة",
+    "sell": "بيع",
+    "sellDescription": "بع أي شيء تملكه",
+    "delivery": "توصيل",
+    "deliveryDescription": "توصيل سريع وآمن"
+  },
+  "Categories": {
+    "title": "تصفح التصنيفات",
+    "viewAll": "عرض جميع التصنيفات",
+    "cars": "سيارات",
+    "properties": "عقارات",
+    "electronics": "إلكترونيات",
+    "furniture": "أثاث ومفروشات منزلية",
+    "services": "خدمات",
+    "tools": "أدوات",
+    "fashion": "أزياء وإكسسوارات",
+    "kids": "أطفال ومواليد",
+    "hobbies": "هوايات ورياضة",
+    "more": "المزيد"
+  },
+  "Listings": {
+    "title": "إعلانات مميزة",
+    "viewAll": "عرض جميع الإعلانات",
+    "rent": "تأجير",
+    "sell": "بيع",
+    "perDay": "/ يوم",
+    "perMonth": "/ شهر",
+    "favorite": "إضافة إلى المفضلة"
+  },
+  "Trust": {
+    "verified": "بائعين موثوقين",
+    "verifiedDescription": "بائعون تم التحقق منهم",
+    "payments": "دفع آمن",
+    "paymentsDescription": "حماية لجميع طرق الدفع",
+    "delivery": "توصيل سريع",
+    "deliveryDescription": "توصيل سريع وموثوق",
+    "support": "دعم على مدار الساعة",
+    "supportDescription": "فريقنا جاهز لمساعدتك",
+    "safe": "آمن وموثوق",
+    "safeDescription": "تجربة آمنة للجميع"
+  },
+  "Promos": {
+    "postTitle": "انشر إعلانك ليصل إلى آلاف المشترين",
+    "postDescription": "انضم إلى آلاف المستخدمين الذين يشترون ويبيعون على دومه.",
+    "postButton": "انشر إعلانك",
+    "shippingTitle": "خدمات الشحن الدولية",
+    "shippingDescription": "تصفح شركات الشحن الدولية الموثوقة وبيانات التواصل معها.",
+    "shippingButton": "عرض الشركات"
+  },
+  "Footer": {
+    "quickLinks": "روابط سريعة",
+    "categories": "التصنيفات",
+    "company": "الشركة",
+    "support": "المساعدة",
+    "follow": "تابعنا",
+    "rights": "جميع الحقوق محفوظة."
+  }
 }

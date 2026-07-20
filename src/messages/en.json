@@ -3,5 +3,91 @@
   "home":{"badge":"Yemen's local marketplace","title":"Rent. Buy. Sell.\nAll in One Place.","subtitle":"Everything you need, anytime, anywhere.","searchPlaceholder":"What are you looking for?","search":"Search","trusted":"Trusted by thousands of users","categories":"All Categories","verified":"Verified Sellers","free":"Post Your Ad","actions":{"rent":{"title":"Rent","subtitle":"Find places & things to rent"},"buy":{"title":"Buy","subtitle":"Buy new & used items"},"sell":{"title":"Sell","subtitle":"Sell anything you own"},"delivery":{"title":"Delivery","subtitle":"Fast & safe delivery"}}},
   "categories":{"title":"Browse categories","subtitle":"Start with the category you need","vehicles":"Vehicles","properties":"Properties","electronics":"Electronics","furniture":"Furniture & Home","services":"Services","tools":"Tools","fashion":"Fashion & Accessories","kids":"Kids & Baby","sports":"Hobbies & Sports","more":"More"},
   "featured":{"title":"Featured Listings","subtitle":"Popular listings near you","items":{"0":{"title":"Toyota Land Cruiser 2021","price":"$85 / Day","location":"Sana'a","category":"Rent"},"1":{"title":"Villa in Al-Sabeen Street","price":"$950 / Month","location":"Sana'a","category":"Rent"},"2":{"title":"Canon 80D Camera","price":"$450","location":"Sana'a","category":"Sell"},"3":{"title":"Bicycle","price":"$15 / Day","location":"Sana'a","category":"Rent"},"4":{"title":"Apartment in Al Wahda","price":"$200 / Month","location":"Sana'a","category":"Rent"},"5":{"title":"iPhone 14 Pro Max","price":"$650","location":"Sana'a","category":"Sell"}}},
-  "footer":{"about":"A bilingual marketplace for renting, buying and selling across Yemen.","company":{"title":"Company","one":"About Deumah","two":"How it works","three":"Contact"},"support":{"title":"Support","one":"Help center","two":"Safety","three":"Report an issue"},"legal":{"title":"Legal","one":"Terms","two":"Privacy","three":"Cookies"}}
+  "footer":{"about":"A bilingual marketplace for renting, buying and selling across Yemen.","company":{"title":"Company","one":"About Deumah","two":"How it works","three":"Contact"},"support":{"title":"Support","one":"Help center","two":"Safety","three":"Report an issue"},"legal":{"title":"Legal","one":"Terms","two":"Privacy","three":"Cookies"}},
+
+  "Nav": {
+    "rent": "Rent",
+    "buy": "Buy",
+    "sell": "Sell",
+    "delivery": "Delivery",
+    "services": "Services",
+    "more": "More",
+    "login": "Log in",
+    "signup": "Sign up",
+    "favorites": "Favorites",
+    "notifications": "Notifications"
+  },
+  "Hero": {
+    "titleLine1": "Rent. Buy. Sell.",
+    "titleLine2": "All in One Place.",
+    "subtitle": "Everything you need, anytime, anywhere.",
+    "trusted": "Trusted by thousands of users"
+  },
+  "Search": {
+    "category": "All Categories",
+    "placeholder": "What are you looking for?",
+    "location": "Sana'a",
+    "button": "Search"
+  },
+  "Actions": {
+    "rent": "Rent",
+    "rentDescription": "Find places and items to rent",
+    "buy": "Buy",
+    "buyDescription": "Buy new and used items",
+    "sell": "Sell",
+    "sellDescription": "Sell anything you own",
+    "delivery": "Delivery",
+    "deliveryDescription": "Fast and safe delivery"
+  },
+  "Categories": {
+    "title": "Browse Categories",
+    "viewAll": "View all categories",
+    "cars": "Cars",
+    "properties": "Properties",
+    "electronics": "Electronics",
+    "furniture": "Furniture & Home",
+    "services": "Services",
+    "tools": "Tools",
+    "fashion": "Fashion & Accessories",
+    "kids": "Kids & Baby",
+    "hobbies": "Hobbies & Sports",
+    "more": "More"
+  },
+  "Listings": {
+    "title": "Featured Listings",
+    "viewAll": "View all listings",
+    "rent": "Rent",
+    "sell": "Sell",
+    "perDay": "/ Day",
+    "perMonth": "/ Month",
+    "favorite": "Add to favorites"
+  },
+  "Trust": {
+    "verified": "Verified Sellers",
+    "verifiedDescription": "Trusted and verified sellers",
+    "payments": "Secure Payments",
+    "paymentsDescription": "Your payments are protected",
+    "delivery": "Fast Delivery",
+    "deliveryDescription": "Quick and reliable delivery",
+    "support": "24/7 Support",
+    "supportDescription": "We are here to help you",
+    "safe": "Safe & Secure",
+    "safeDescription": "A safe experience for everyone"
+  },
+  "Promos": {
+    "postTitle": "Post Your Ad and Reach Thousands of Buyers",
+    "postDescription": "Join thousands of people buying and selling on Deumah.",
+    "postButton": "Post Your Ad",
+    "shippingTitle": "International Shipping Services",
+    "shippingDescription": "Browse trusted international shipping companies and their contact information.",
+    "shippingButton": "View Companies"
+  },
+  "Footer": {
+    "quickLinks": "Quick Links",
+    "categories": "Categories",
+    "company": "Company",
+    "support": "Support",
+    "follow": "Follow Us",
+    "rights": "All rights reserved."
+  }
 }

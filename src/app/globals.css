@@ -11,6 +11,26 @@
   --color-deumah-border: #24354d;
   --radius-deumah: 1rem;
   --shadow-deumah: 0 12px 30px rgb(0 0 0 / 0.22);
+
+  /* Handoff design tokens */
+  --color-deumah-navy-950: #06111f;
+  --color-deumah-navy-900: #0b1b2e;
+  --color-deumah-green-700: #087a3a;
+  --color-deumah-green-600: #0f9b4c;
+  --color-deumah-green-100: #e8f6ed;
+  --color-deumah-gold-500: #f5b300;
+  --color-deumah-orange-600: #d97706;
+  --color-deumah-purple-800: #4a124f;
+  --color-deumah-gray-50: #f8fafc;
+  --color-deumah-gray-200: #e5e7eb;
+  --color-deumah-gray-500: #6b7280;
+  --color-deumah-danger: #dc2626;
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: Tajawal, Arial, ui-sans-serif, system-ui, sans-serif;
+  --radius-deumah-sm: 0.625rem;
+  --radius-deumah-lg: 1rem;
+  --shadow-deumah-card: 0 6px 20px rgb(6 17 31 / 0.08);
+  --shadow-deumah-search: 0 12px 30px rgb(6 17 31 / 0.18);
 }
 
 :root { color-scheme: dark; }
@@ -21,3 +41,9 @@ button, input, textarea, select { font: inherit; }
 .container-shell { width: min(100% - 3rem, 80rem); margin-inline: auto; }
 .focus-ring { outline: none; }
 .focus-ring:focus-visible { box-shadow: 0 0 0 3px rgb(34 197 94 / 0.35); }
+
+@layer base {
+  html { background: var(--color-deumah-gray-50); }
+  body { color: var(--color-deumah-navy-950); }
+  html[dir='rtl'] body { font-family: var(--font-arabic); }
+}

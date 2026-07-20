@@ -1,6 +1,6 @@
 'use client';
 import Image from 'next/image';
-import {useTranslations} from 'next-intl';
+import {useLocale, useTranslations} from 'next-intl';
 import {ActionCard} from './action-card';
 import {CategoryCard} from './category-card';
 import {ListingCard} from './listing-card';
@@ -16,6 +16,8 @@ const listingImages=[
 ];
 
 export function DeumahHome(){
+ const locale=useLocale();
+ const isAr=locale==='ar';
  const hero=useTranslations('Hero'), search=useTranslations('Search'), actions=useTranslations('Actions'), categories=useTranslations('Categories'), listings=useTranslations('Listings'), trust=useTranslations('Trust'), promos=useTranslations('Promos');
  const categoryKeys=['cars','properties','electronics','furniture','services','tools','fashion','kids','hobbies','more'] as const;
  return <div className="min-h-screen bg-deumah-gray-50 text-deumah-navy-950"><DeumahHeader/>
@@ -29,7 +31,7 @@ export function DeumahHome(){
 
    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"><div className="flex items-center justify-between"><h2 className="text-2xl font-semibold">{categories('title')}</h2><a href="#" className="text-sm font-semibold text-deumah-green-700">{categories('viewAll')}</a></div><div className="mt-5 flex overflow-x-auto gap-3 pb-3 sm:grid sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 scrollbar-none snap-x snap-mandatory">{categoryKeys.map((key)=>{return <div key={key} className="shrink-0 w-[140px] sm:w-auto snap-start"><CategoryCard label={categories(key)} icon={<img src={`/deumah/icons/${key}.svg`} alt="" className="size-8 block object-contain" />} /></div>})}</div></section>
 
-   <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8"><div className="flex items-center justify-between"><h2 className="text-2xl font-semibold">{listings('title')}</h2><a href="#" className="text-sm font-semibold text-deumah-green-700">{listings('viewAll')}</a></div><div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{listingImages.map((image,i)=><ListingCard key={image} image={image} title={['Toyota Land Cruiser 2021','Villa in Al-Sabeen Street','Canon 80D Camera','Bicycle'][i]} price={['$85 / Day','$950 / Month','$450','$15 / Day'][i]} location="Sana'a" badge={i===2?listings('sell'):listings('rent')} badgeTone={i===2?'sell':'rent'}/>)}</div></section>
+   <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8"><div className="flex items-center justify-between"><h2 className="text-2xl font-semibold">{listings('title')}</h2><a href="#" className="text-sm font-semibold text-deumah-green-700">{listings('viewAll')}</a></div><div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{listingImages.map((image,i)=><ListingCard key={image} image={image} title={isAr ? ['تويوتا لاند كروزر 2021','فيلا في شارع السبعين','كاميرا كانون 80D','دراجة هوائية'][i] : ['Toyota Land Cruiser 2021','Villa in Al-Sabeen Street','Canon 80D Camera','Bicycle'][i]} price={isAr ? ['٨٥ دولار / يوم','٩٥٠ دولار / شهر','٤٥٠ دولار','١٥ دولار / يوم'][i] : ['$85 / Day','$950 / Month','$450','$15 / Day'][i]} location={isAr ? 'صنعاء' : "Sana'a"} badge={i===2?listings('sell'):listings('rent')} badgeTone={i===2?'sell':'rent'}/>)}</div></section>
 
    <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8"><div className="flex overflow-x-auto gap-6 pb-4 sm:grid sm:grid-cols-2 lg:grid-cols-5 rounded-deumah bg-deumah-navy-950 p-6 text-white scrollbar-none snap-x snap-mandatory">{['verified','payments','delivery','support','safe'].map(key=><div key={key} className="flex gap-3 shrink-0 w-[220px] sm:w-auto snap-start"><ShieldIcon className="size-7 shrink-0 text-deumah-gold-500"/><div><h3 className="font-semibold">{trust(key as never)}</h3><p className="mt-1 text-sm text-white/70">{trust(`${key}Description` as never)}</p></div></div>)}</div></section>
 

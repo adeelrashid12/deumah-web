@@ -11,7 +11,7 @@ export function Footer() {
   const isAr = locale === 'ar';
 
   return (
-    <footer className="border-t border-deumah-border bg-deumah-navy py-12 text-sm text-white">
+    <footer className="border-t border-deumah-border bg-deumah-navy py-12 text-sm text-gray-300">
       <div className="container-shell">
         
         {/* Main Grid: 6 columns */}
@@ -26,15 +26,15 @@ export function Footer() {
                 className="h-10 w-auto object-contain brightness-100" 
               />
             </Link>
-            <p className="text-xs text-white leading-relaxed font-semibold">
+            <p className="text-xs text-gray-400 leading-relaxed font-medium">
               {isAr ? 'دومه هي منصتك المتكاملة لتأجير وشراء وبيع كل شيء في اليمن بسهولة وأمان.' : 'Deumah is your all-in-one platform to rent, buy, sell, and get things delivered easily and safely.'}
             </p>
           </div>
 
           {/* Column 2: Quick Links */}
           <div className="flex flex-col gap-3">
-            <h3 className="font-extrabold text-white text-sm tracking-tight whitespace-nowrap">{isAr ? 'روابط سريعة' : 'Quick Links'}</h3>
-            <div className="flex flex-col gap-2 font-bold text-white">
+            <h3 className="font-bold text-gray-100 text-sm tracking-tight whitespace-nowrap">{isAr ? 'روابط سريعة' : 'Quick Links'}</h3>
+            <div className="flex flex-col gap-2 font-medium text-gray-300">
               <Link href="/listings?type=rent" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{navT('rent')}</Link>
               <Link href="/listings?type=buy" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{navT('buy')}</Link>
               <Link href="/listings?type=sell" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{navT('sell')}</Link>
@@ -45,8 +45,8 @@ export function Footer() {
 
           {/* Column 3: Categories */}
           <div className="flex flex-col gap-3">
-            <h3 className="font-extrabold text-white text-sm tracking-tight whitespace-nowrap">{isAr ? 'التصنيفات' : 'Categories'}</h3>
-            <div className="flex flex-col gap-2 font-bold text-white">
+            <h3 className="font-bold text-gray-100 text-sm tracking-tight whitespace-nowrap">{isAr ? 'التصنيفات' : 'Categories'}</h3>
+            <div className="flex flex-col gap-2 font-medium text-gray-300">
               <Link href="/listings?category=vehicles" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{catT('vehicles')}</Link>
               <Link href="/listings?category=properties" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{catT('properties')}</Link>
               <Link href="/listings?category=electronics" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{catT('electronics')}</Link>
@@ -57,8 +57,8 @@ export function Footer() {
 
           {/* Column 4: Company */}
           <div className="flex flex-col gap-3">
-            <h3 className="font-extrabold text-white text-sm tracking-tight whitespace-nowrap">{isAr ? 'الشركة' : 'Company'}</h3>
-            <div className="flex flex-col gap-2 font-bold text-white">
+            <h3 className="font-bold text-gray-100 text-sm tracking-tight whitespace-nowrap">{isAr ? 'الشركة' : 'Company'}</h3>
+            <div className="flex flex-col gap-2 font-medium text-gray-300">
               <Link href="/about" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{t('company.one')}</Link>
               <Link href="/how-it-works" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{t('company.two')}</Link>
               <Link href="/terms" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{isAr ? 'الشروط والأحكام' : 'Terms & Conditions'}</Link>
@@ -68,8 +68,8 @@ export function Footer() {
 
           {/* Column 5: Support */}
           <div className="flex flex-col gap-3">
-            <h3 className="font-extrabold text-white text-sm tracking-tight whitespace-nowrap">{isAr ? 'المساعدة' : 'Support'}</h3>
-            <div className="flex flex-col gap-2 font-bold text-white">
+            <h3 className="font-bold text-gray-100 text-sm tracking-tight whitespace-nowrap">{isAr ? 'المساعدة' : 'Support'}</h3>
+            <div className="flex flex-col gap-2 font-medium text-gray-300">
               <Link href="/help" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{t('support.one')}</Link>
               <Link href="/safety" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{t('support.two')}</Link>
               <Link href="/contact" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{isAr ? 'اتصل بنا' : 'Contact Us'}</Link>
@@ -80,8 +80,8 @@ export function Footer() {
           {/* Column 6: Follow & Apps */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <h3 className="font-extrabold text-white text-sm tracking-tight">{isAr ? 'تابعنا' : 'Follow Us'}</h3>
-              <div className="flex items-center gap-3.5 text-white">
+              <h3 className="font-bold text-gray-100 text-sm tracking-tight">{isAr ? 'تابعنا' : 'Follow Us'}</h3>
+              <div className="flex items-center gap-3.5 text-gray-300">
                 <a href="#" className="hover:text-deumah-green transition duration-200" aria-label="Facebook">
                   <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
                 </a>
@@ -110,8 +110,8 @@ export function Footer() {
         </div>
 
         {/* Bottom copyright bar */}
-        <div className="mt-8 pt-8 border-t border-deumah-border text-center text-xs font-bold text-white flex flex-col sm:flex-row justify-between items-center gap-4">
-          <span>{isAr ? '© ٢٠٢٤ دومه. جميع الحقوق محفوظة.' : '© 2024 Deumah. All rights reserved.'}</span>
+        <div className="mt-8 pt-8 border-t border-deumah-border text-center text-xs font-medium text-gray-400 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <span>{isAr ? `© ${new Date().getFullYear().toLocaleString('ar-EG', {useGrouping: false})} دومه. جميع الحقوق محفوظة.` : `© ${new Date().getFullYear()} Deumah. All rights reserved.`}</span>
           <div className="flex gap-6">
             <Link href="/terms" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{t('legal.one')}</Link>
             <Link href="/privacy" className="hover:text-deumah-green transition duration-200 whitespace-nowrap">{t('legal.two')}</Link>

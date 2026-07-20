@@ -1,16 +1,23 @@
 @import "tailwindcss";
 
-:root {
-  --background: #F8FAFC;
-  --foreground: #0F172A;
+@theme {
+  --color-deumah-navy: #07111f;
+  --color-deumah-panel: #0d1a2b;
+  --color-deumah-panel-2: #122238;
+  --color-deumah-green: #16a34a;
+  --color-deumah-green-soft: #22c55e;
+  --color-deumah-gold: #d4af37;
+  --color-deumah-muted: #9ca3af;
+  --color-deumah-border: #24354d;
+  --radius-deumah: 1rem;
+  --shadow-deumah: 0 12px 30px rgb(0 0 0 / 0.22);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-}
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+html { background: var(--color-deumah-navy); }
+body { margin: 0; background: var(--color-deumah-navy); color: white; }
+button, input, textarea, select { font: inherit; }
+.container-shell { width: min(100% - 3rem, 80rem); margin-inline: auto; }
+.focus-ring { outline: none; }
+.focus-ring:focus-visible { box-shadow: 0 0 0 3px rgb(34 197 94 / 0.35); }

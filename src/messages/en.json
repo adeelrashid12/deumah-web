@@ -91,5 +91,27 @@
     "support": "Support",
     "follow": "Follow Us",
     "rights": "All rights reserved."
+  },
+  "SearchPage": {
+    "title": "Search Results",
+    "filters": "Filters",
+    "clearAll": "Clear All",
+    "type": "Transaction Type",
+    "rent": "Rent",
+    "buy": "Buy",
+    "sell": "Sell",
+    "priceRange": "Price Range (USD)",
+    "minPrice": "Min Price",
+    "maxPrice": "Max Price",
+    "locations": "Locations",
+    "verifiedOnly": "Verified Owners Only",
+    "sortBy": "Sort By",
+    "newest": "Newest",
+    "priceLowHigh": "Price: Low to High",
+    "priceHighLow": "Price: High to Low",
+    "noResults": "No listings found matching your criteria.",
+    "viewMap": "View Map",
+    "hideMap": "Hide Map",
+    "searchPlaceholder": "Search listings..."
   }
 }

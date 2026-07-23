@@ -103,7 +103,7 @@ const ALL_MOCK_LISTINGS = [
     id: '5',
     category: 'wedding_halls',
     image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Al-Qasr Royal Wedding Hall',
+    titleEn: 'Royal Palace Wedding Hall',
     titleAr: 'قاعة القصر الملكية للأفراح',
     price: 1200,
     periodEn: 'Day',

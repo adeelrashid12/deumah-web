@@ -453,7 +453,7 @@ function SearchResultsPage() {
         </div>
 
         {/* Premium City Selector Horizontal Bar */}
-        <div className="mb-6 bg-white p-4 rounded-deumah border border-deumah-gray-200 shadow-sm">
+        <div className="mb-4 bg-white p-4 rounded-deumah border border-deumah-gray-200 shadow-sm">
           <p className="text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">
             {isAr ? 'تصفية حسب المحافظة في اليمن' : 'Filter by City in Yemen'}
           </p>
@@ -471,6 +471,38 @@ function SearchResultsPage() {
                   }`}
                 >
                   {isAr ? city.ar : city.en}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Premium Category Quick Chips Horizontal Bar */}
+        <div className="mb-6 bg-white p-4 rounded-deumah border border-deumah-gray-200 shadow-sm">
+          <p className="text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">
+            {isAr ? 'تصفح الفئات الشائعة' : 'Browse Popular Categories'}
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+            {[
+              { id: 'cars', en: 'Cars', ar: 'سيارات', emoji: '🚗' },
+              { id: 'properties', en: 'Properties', ar: 'عقارات', emoji: '🏠' },
+              { id: 'wedding_halls', en: 'Wedding Halls', ar: 'قاعات أفراح', emoji: '💍' },
+              { id: 'chalets', en: 'Chalets', ar: 'شاليهات', emoji: '🏡' },
+              { id: 'electronics', en: 'Electronics', ar: 'إلكترونيات', emoji: '📱' }
+            ].map(chip => {
+              const isActive = selectedCategories.includes(chip.id);
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => handleCategoryChange(chip.id)}
+                  className={`shrink-0 px-4 py-2 rounded-full text-xs font-semibold border transition snap-start flex items-center gap-1.5 ${
+                    isActive 
+                      ? 'bg-deumah-green-700 text-white border-deumah-green-700 shadow-sm' 
+                      : 'bg-deumah-gray-50 text-deumah-gray-700 border-deumah-gray-200 hover:border-deumah-gray-300'
+                  }`}
+                >
+                  <span>{chip.emoji}</span>
+                  <span>{isAr ? chip.ar : chip.en}</span>
                 </button>
               );
             })}

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
@@ -204,6 +205,8 @@ export default function SearchResultsPage() {
   const catT = useTranslations('Categories');
   const listT = useTranslations('Listings');
 
+  const searchParams = useSearchParams();
+
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -214,6 +217,17 @@ export default function SearchResultsPage() {
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Sync state with URL search parameters on load/change
+  useEffect(() => {
+    const queryParam = searchParams.get('query') || '';
+    const categoryParam = searchParams.get('category') || '';
+    const cityParam = searchParams.get('city') || '';
+
+    setSearchQuery(queryParam);
+    setSelectedCategories(categoryParam ? [categoryParam] : []);
+    setSelectedCities(cityParam ? [cityParam] : []);
+  }, [searchParams]);
 
   // Filter Categories list
   const categoryOptions = ['cars', 'properties', 'electronics', 'furniture', 'services', 'tools', 'fashion', 'kids', 'hobbies', 'wedding_halls', 'chalets'];

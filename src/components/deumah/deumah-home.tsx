@@ -1,4 +1,5 @@
 'use client';
+import {useState} from 'react';
 import Image from 'next/image';
 import {useLocale, useTranslations} from 'next-intl';
 import {ActionCard} from './action-card';
@@ -6,6 +7,31 @@ import {CategoryCard} from './category-card';
 import {ListingCard} from './listing-card';
 import {CartIcon, HomeIcon, SearchIcon, ShieldIcon, TagIcon, TruckIcon} from './icons';
 import {DeumahHeader} from './deumah-header';
+
+const YEMEN_CITIES = [
+  { id: 'sanaa_city', en: "Sana'a City (Capital Municipality)", ar: "أمانة العاصمة" },
+  { id: 'sanaa', en: "Sana'a", ar: "صنعاء" },
+  { id: 'aden', en: "Aden", ar: "عدن" },
+  { id: 'taiz', en: "Taiz", ar: "تعز" },
+  { id: 'ibb', en: "Ibb", ar: "إب" },
+  { id: 'hadhramaut', en: "Hadhramaut", ar: "حضرموت" },
+  { id: 'al_hudaydah', en: "Al Hudaydah", ar: "الحديدة" },
+  { id: 'al_mahrah', en: "Al Mahrah", ar: "المهرة" },
+  { id: 'al_jawf', en: "Al Jawf", ar: "الجوف" },
+  { id: 'al_bayda', en: "Al Bayda", ar: "البيضاء" },
+  { id: 'dhamar', en: "Dhamar", ar: "ذمار" },
+  { id: 'hajjah', en: "Hajjah", ar: "حجة" },
+  { id: 'lahij', en: "Lahij", ar: "لحج" },
+  { id: 'marib', en: "Marib", ar: "مأرب" },
+  { id: 'sadah', en: "Sa'dah", ar: "صعدة" },
+  { id: 'shabwah', en: "Shabwah", ar: "شبوة" },
+  { id: 'abyan', en: "Abyan", ar: "أبين" },
+  { id: 'al_dhalee', en: "Al Dhale'e", ar: "الضالع" },
+  { id: 'amran', en: "Amran", ar: "عمران" },
+  { id: 'raymah', en: "Raymah", ar: "ريمة" },
+  { id: 'al_mahwit', en: "Al Mahwit", ar: "المحويت" },
+  { id: 'socotra', en: "Socotra", ar: "سقطرى" }
+];
 
 const categoryIcons=[HomeIcon,HomeIcon,CartIcon,HomeIcon,ShieldIcon,TagIcon,TagIcon,HomeIcon,CartIcon,TagIcon];
 const listingImages=[
@@ -20,11 +46,55 @@ export function DeumahHome(){
  const isAr=locale==='ar';
  const hero=useTranslations('Hero'), search=useTranslations('Search'), actions=useTranslations('Actions'), categories=useTranslations('Categories'), listings=useTranslations('Listings'), trust=useTranslations('Trust'), promos=useTranslations('Promos');
  const categoryKeys=['cars','properties','electronics','furniture','services','tools','fashion','kids','hobbies','wedding_halls','chalets','more'] as const;
+
+ const [query, setQuery] = useState('');
+ const [category, setCategory] = useState('');
+ const [city, setCity] = useState('');
+
+ const searchUrl = `/${locale}/listings?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&city=${encodeURIComponent(city)}`;
+
  return <div className="min-h-screen bg-deumah-gray-50 text-deumah-navy-950"><DeumahHeader/>
   <main>
    <section className="relative isolate overflow-hidden bg-deumah-navy-950 text-white"><Image src="/hero_bg.png" alt="Sana'a skyline at sunset" fill priority className="-z-20 object-cover" sizes="100vw"/><div className="absolute inset-0 -z-10 bg-gradient-to-r from-deumah-navy-950 via-deumah-navy-950/75 to-deumah-navy-950/25 rtl:bg-gradient-to-l"/>
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14"><div className="max-w-2xl"><h1 className="text-4xl font-bold tracking-tight sm:text-5xl"><span className="block">{hero('titleLine1')}</span><span className="block text-deumah-green-600">{hero('titleLine2')}</span></h1><p className="mt-4 text-lg text-white/85">{hero('subtitle')}</p></div>
-    <div className="mt-8 grid gap-3 rounded-deumah-lg bg-white p-3 text-deumah-navy-950 shadow-deumah-search md:grid-cols-[180px_1fr_160px_auto]"><button className="rounded-deumah-sm border border-deumah-gray-200 px-4 py-3 text-start text-sm">{search('category')}</button><label className="flex items-center gap-3 rounded-deumah-sm px-3"><SearchIcon className="size-5 text-deumah-gray-500"/><input aria-label={search('placeholder')} placeholder={search('placeholder')} className="min-w-0 flex-1 bg-transparent py-3 outline-none"/></label><button className="rounded-deumah-sm border border-deumah-gray-200 px-4 py-3 text-start text-sm">{search('location')}</button><a href={`/${locale}/listings`} className="rounded-deumah-sm bg-deumah-green-700 px-6 py-3 font-semibold text-white hover:bg-deumah-green-600 text-center flex items-center justify-center">{search('button')}</a></div>
+    <div className="mt-8 grid gap-3 rounded-deumah-lg bg-white p-3 text-deumah-navy-950 shadow-deumah-search md:grid-cols-[180px_1fr_160px_auto]">
+      <select
+        value={category}
+        onChange={e => setCategory(e.target.value)}
+        className="rounded-deumah-sm border border-deumah-gray-200 px-4 py-3 text-sm bg-transparent outline-none cursor-pointer focus:border-deumah-green-600 transition"
+      >
+        <option value="">{search('category')}</option>
+        {categoryKeys.filter(k => k !== 'more').map(k => (
+          <option key={k} value={k}>{categories(k)}</option>
+        ))}
+      </select>
+
+      <label className="flex items-center gap-3 rounded-deumah-sm px-3 border border-deumah-gray-200 md:border-none">
+        <SearchIcon className="size-5 text-deumah-gray-500"/>
+        <input 
+          aria-label={search('placeholder')} 
+          placeholder={search('placeholder')} 
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          className="min-w-0 flex-1 bg-transparent py-3 outline-none"
+        />
+      </label>
+
+      <select
+        value={city}
+        onChange={e => setCity(e.target.value)}
+        className="rounded-deumah-sm border border-deumah-gray-200 px-4 py-3 text-sm bg-transparent outline-none cursor-pointer focus:border-deumah-green-600 transition"
+      >
+        <option value="">{isAr ? 'المحافظة' : 'City'}</option>
+        {YEMEN_CITIES.map(c => (
+          <option key={c.id} value={c.id}>{isAr ? c.ar : c.en}</option>
+        ))}
+      </select>
+
+      <a href={searchUrl} className="rounded-deumah-sm bg-deumah-green-700 px-6 py-3 font-semibold text-white hover:bg-deumah-green-600 text-center flex items-center justify-center transition">
+        {search('button')}
+      </a>
+    </div>
     <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4"><ActionCard tone="rent" title={actions('rent')} description={actions('rentDescription')} icon={<HomeIcon/>}/><ActionCard tone="buy" title={actions('buy')} description={actions('buyDescription')} icon={<CartIcon/>}/><ActionCard tone="sell" title={actions('sell')} description={actions('sellDescription')} icon={<TagIcon/>}/><ActionCard tone="delivery" title={actions('delivery')} description={actions('deliveryDescription')} icon={<TruckIcon/>}/></div>
     <div className="mt-4 flex justify-end"><div className="rounded-deumah bg-deumah-navy-900/85 px-5 py-3 text-sm">{hero('trusted')}</div></div></div>
    </section>

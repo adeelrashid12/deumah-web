@@ -521,14 +521,14 @@ function SearchResultsPage() {
               {/* Categories list */}
               <div>
                 <h3 className="text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">{catT('title')}</h3>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
                   {categoryOptions.map(cat => (
-                    <label key={cat} className="flex items-center gap-2.5 text-xs text-deumah-gray-700 hover:text-deumah-navy-950 cursor-pointer">
+                    <label key={cat} className="flex items-center gap-2.5 w-full text-xs text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                       <input
                         type="checkbox"
                         checked={selectedCategories.includes(cat)}
                         onChange={() => handleCategoryChange(cat)}
-                        className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                        className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                       />
                       <span>{catT(cat)}</span>
                     </label>
@@ -539,14 +539,14 @@ function SearchResultsPage() {
               {/* Locations sidebar check list */}
               <div>
                 <h3 className="text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">{isAr ? 'المحافظات' : 'Cities'}</h3>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 border border-deumah-gray-100 p-2 rounded bg-deumah-gray-50">
+                <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1 border border-deumah-gray-100 p-2 rounded bg-deumah-gray-50">
                   {YEMEN_CITIES.map(city => (
-                    <label key={city.id} className="flex items-center gap-2.5 text-xs text-deumah-gray-700 hover:text-deumah-navy-950 cursor-pointer">
+                    <label key={city.id} className="flex items-center gap-2.5 w-full text-xs text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                       <input
                         type="checkbox"
                         checked={selectedCities.includes(city.id)}
                         onChange={() => handleCityToggle(city.id)}
-                        className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                        className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                       />
                       <span>{isAr ? city.ar : city.en}</span>
                     </label>
@@ -556,52 +556,52 @@ function SearchResultsPage() {
 
               {/* Verified owners toggle & additional filters */}
               <div className="pt-2 border-t border-deumah-gray-100 space-y-2.5">
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={onlyVerified}
                     onChange={e => setOnlyVerified(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('verifiedSellers')}</span>
                 </label>
 
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={newToday}
                     onChange={e => setNewToday(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('newToday')}</span>
                 </label>
 
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={negotiable}
                     onChange={e => setNegotiable(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('negotiable')}</span>
                 </label>
 
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={deliveryAvailable}
                     onChange={e => setDeliveryAvailable(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('deliveryAvailable')}</span>
                 </label>
 
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={freeDelivery}
                     onChange={e => setFreeDelivery(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('freeDelivery')}</span>
                 </label>
@@ -702,14 +702,14 @@ function SearchResultsPage() {
 
               <div>
                 <h3 className="text-xs font-bold text-deumah-gray-500 uppercase mb-2">{catT('title')}</h3>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
                   {categoryOptions.map(cat => (
-                    <label key={cat} className="flex items-center gap-2.5 text-xs text-deumah-gray-700 cursor-pointer">
+                    <label key={cat} className="flex items-center gap-2.5 w-full text-xs text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                       <input
                         type="checkbox"
                         checked={selectedCategories.includes(cat)}
                         onChange={() => handleCategoryChange(cat)}
-                        className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                        className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                       />
                       <span>{catT(cat)}</span>
                     </label>
@@ -719,14 +719,14 @@ function SearchResultsPage() {
 
               <div>
                 <h3 className="text-xs font-bold text-deumah-gray-500 uppercase mb-2">{isAr ? 'المحافظات' : 'Cities'}</h3>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 border border-deumah-gray-100 p-2 rounded bg-deumah-gray-50">
+                <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1 border border-deumah-gray-100 p-2 rounded bg-deumah-gray-50">
                   {YEMEN_CITIES.map(city => (
-                    <label key={city.id} className="flex items-center gap-2.5 text-xs text-deumah-gray-700 cursor-pointer">
+                    <label key={city.id} className="flex items-center gap-2.5 w-full text-xs text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                       <input
                         type="checkbox"
                         checked={selectedCities.includes(city.id)}
                         onChange={() => handleCityToggle(city.id)}
-                        className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                        className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                       />
                       <span>{isAr ? city.ar : city.en}</span>
                     </label>
@@ -735,52 +735,52 @@ function SearchResultsPage() {
               </div>
 
               <div className="space-y-2.5">
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={onlyVerified}
                     onChange={e => setOnlyVerified(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('verifiedSellers')}</span>
                 </label>
 
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={newToday}
                     onChange={e => setNewToday(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('newToday')}</span>
                 </label>
 
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={negotiable}
                     onChange={e => setNegotiable(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('negotiable')}</span>
                 </label>
 
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={deliveryAvailable}
                     onChange={e => setDeliveryAvailable(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('deliveryAvailable')}</span>
                 </label>
 
-                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2.5 w-full text-xs font-semibold text-deumah-gray-700 hover:text-deumah-navy-950 hover:bg-deumah-gray-100/70 p-1.5 rounded-deumah-sm transition cursor-pointer">
                   <input
                     type="checkbox"
                     checked={freeDelivery}
                     onChange={e => setFreeDelivery(e.target.checked)}
-                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                    className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                   />
                   <span>{t('freeDelivery')}</span>
                 </label>

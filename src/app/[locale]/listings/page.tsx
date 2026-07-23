@@ -286,31 +286,59 @@ export default function SearchResultsPage() {
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         
         {/* Top search & bar options */}
-        <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-deumah border border-deumah-gray-200 shadow-sm">
-          <div className="relative flex-1 max-w-md">
-            <input
-              type="text"
-              placeholder={t('searchPlaceholder')}
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-4 pr-10 py-2.5 rounded-deumah-sm border border-deumah-gray-200 outline-none text-sm focus:border-deumah-green-600 transition"
-            />
-            <span className="absolute inset-y-0 right-3 flex items-center text-deumah-gray-400">
-              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <div className="mb-4 bg-white p-3 rounded-deumah border border-deumah-gray-200 shadow-sm">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_180px_180px_160px_auto] items-center">
+            {/* Search Input */}
+            <div className="relative flex items-center border border-deumah-gray-200 rounded-deumah-sm px-3 focus-within:border-deumah-green-600 transition">
+              <svg className="size-5 text-deumah-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-            </span>
-          </div>
+              <input
+                type="text"
+                placeholder={t('searchPlaceholder')}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full pl-2 py-2.5 outline-none text-sm bg-transparent"
+              />
+            </div>
 
-          <div className="flex items-center gap-3">
-            {/* Sorting */}
-            <div className="flex items-center gap-2">
-              <label htmlFor="sortBy" className="text-xs font-semibold text-deumah-gray-500 whitespace-nowrap">{t('sortBy')}</label>
+            {/* Category Select Dropdown */}
+            <select
+              value={selectedCategories[0] || ""}
+              onChange={e => {
+                const val = e.target.value;
+                setSelectedCategories(val ? [val] : []);
+              }}
+              className="w-full border border-deumah-gray-200 rounded-deumah-sm px-3 py-2.5 text-sm outline-none bg-transparent cursor-pointer focus:border-deumah-green-600"
+            >
+              <option value="">{catT('title')}</option>
+              {categoryOptions.map(cat => (
+                <option key={cat} value={cat}>{catT(cat)}</option>
+              ))}
+            </select>
+
+            {/* City Select Dropdown */}
+            <select
+              value={selectedCities[0] || ""}
+              onChange={e => {
+                const val = e.target.value;
+                setSelectedCities(val ? [val] : []);
+              }}
+              className="w-full border border-deumah-gray-200 rounded-deumah-sm px-3 py-2.5 text-sm outline-none bg-transparent cursor-pointer focus:border-deumah-green-600"
+            >
+              <option value="">{isAr ? 'المحافظة' : 'City'}</option>
+              {YEMEN_CITIES.map(city => (
+                <option key={city.id} value={city.id}>{isAr ? city.ar : city.en}</option>
+              ))}
+            </select>
+
+            {/* Sort Options */}
+            <div className="flex items-center gap-2 w-full">
               <select
                 id="sortBy"
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
-                className="bg-transparent border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 text-sm outline-none cursor-pointer focus:border-deumah-green-600"
+                className="w-full border border-deumah-gray-200 rounded-deumah-sm px-3 py-2.5 text-sm outline-none bg-transparent cursor-pointer focus:border-deumah-green-600"
               >
                 <option value="newest">{t('newest')}</option>
                 <option value="priceAsc">{t('priceLowHigh')}</option>
@@ -321,7 +349,7 @@ export default function SearchResultsPage() {
             {/* Mobile filters button */}
             <button
               onClick={() => setShowMobileFilters(true)}
-              className="md:hidden flex items-center gap-2 rounded-deumah-sm border border-deumah-gray-200 px-4 py-2 text-sm font-semibold hover:bg-deumah-gray-100 transition"
+              className="md:hidden flex items-center justify-center gap-2 rounded-deumah-sm border border-deumah-gray-200 px-4 py-2.5 text-sm font-semibold hover:bg-deumah-gray-100 transition"
             >
               <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />

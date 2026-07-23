@@ -78,7 +78,10 @@ export function ListingCard({ id = '1', title, price, location, image, badge, ba
                 className="rounded-full p-1.5 hover:bg-deumah-gray-100 text-deumah-gray-400 hover:text-deumah-navy-950 transition"
               >
                 <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 10.742l4.63-2.315a2 2 0 11.83 1.83l-4.63 2.315a2 2 0 11-.83-1.83z" />
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <path strokeLinecap="round" d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
                 </svg>
               </button>
 

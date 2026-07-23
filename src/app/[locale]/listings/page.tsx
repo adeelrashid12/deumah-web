@@ -6,7 +6,33 @@ import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { ListingCard } from '@/components/deumah/listing-card';
 
-// Mock Listings Data
+// List of all 22 Yemen cities (English & Arabic)
+const YEMEN_CITIES = [
+  { id: 'sanaa_city', en: "Sana'a City (Capital Municipality)", ar: "أمانة العاصمة" },
+  { id: 'sanaa', en: "Sana'a", ar: "صنعاء" },
+  { id: 'aden', en: "Aden", ar: "عدن" },
+  { id: 'taiz', en: "Taiz", ar: "تعز" },
+  { id: 'ibb', en: "Ibb", ar: "إب" },
+  { id: 'hadhramaut', en: "Hadhramaut", ar: "حضرموت" },
+  { id: 'al_hudaydah', en: "Al Hudaydah", ar: "الحديدة" },
+  { id: 'al_mahrah', en: "Al Mahrah", ar: "المهرة" },
+  { id: 'al_jawf', en: "Al Jawf", ar: "الجوف" },
+  { id: 'al_bayda', en: "Al Bayda", ar: "البيضاء" },
+  { id: 'dhamar', en: "Dhamar", ar: "ذمار" },
+  { id: 'hajjah', en: "Hajjah", ar: "حجة" },
+  { id: 'lahij', en: "Lahij", ar: "لحج" },
+  { id: 'marib', en: "Marib", ar: "مأرب" },
+  { id: 'sadah', en: "Sa'dah", ar: "صعدة" },
+  { id: 'shabwah', en: "Shabwah", ar: "شبوة" },
+  { id: 'abyan', en: "Abyan", ar: "أبين" },
+  { id: 'al_dhalee', en: "Al Dhale'e", ar: "الضالع" },
+  { id: 'amran', en: "Amran", ar: "عمران" },
+  { id: 'raymah', en: "Raymah", ar: "ريمة" },
+  { id: 'al_mahwit', en: "Al Mahwit", ar: "المحويت" },
+  { id: 'socotra', en: "Socotra", ar: "سقطرى" }
+];
+
+// Mock Listings Data matching Yemen cities
 const ALL_MOCK_LISTINGS = [
   {
     id: '1',
@@ -20,6 +46,7 @@ const ALL_MOCK_LISTINGS = [
     type: 'rent',
     locationEn: "Sana'a",
     locationAr: 'صنعاء',
+    cityId: 'sanaa',
     verified: true,
     createdDaysAgo: 2,
   },
@@ -35,6 +62,7 @@ const ALL_MOCK_LISTINGS = [
     type: 'rent',
     locationEn: "Sana'a",
     locationAr: 'صنعاء',
+    cityId: 'sanaa',
     verified: true,
     createdDaysAgo: 5,
   },
@@ -50,6 +78,7 @@ const ALL_MOCK_LISTINGS = [
     type: 'sell',
     locationEn: "Sana'a",
     locationAr: 'صنعاء',
+    cityId: 'sanaa',
     verified: false,
     createdDaysAgo: 1,
   },
@@ -65,6 +94,7 @@ const ALL_MOCK_LISTINGS = [
     type: 'rent',
     locationEn: "Sana'a",
     locationAr: 'صنعاء',
+    cityId: 'sanaa',
     verified: false,
     createdDaysAgo: 12,
   },
@@ -78,8 +108,9 @@ const ALL_MOCK_LISTINGS = [
     periodEn: 'Day',
     periodAr: 'يوم',
     type: 'rent',
-    locationEn: "Sana'a",
-    locationAr: 'صنعاء',
+    locationEn: "Sana'a City (Capital Municipality)",
+    locationAr: 'أمانة العاصمة',
+    cityId: 'sanaa_city',
     verified: true,
     createdDaysAgo: 3,
   },
@@ -93,8 +124,9 @@ const ALL_MOCK_LISTINGS = [
     periodEn: 'Day',
     periodAr: 'يوم',
     type: 'rent',
-    locationEn: "Sana'a",
-    locationAr: 'صنعاء',
+    locationEn: 'Aden',
+    locationAr: 'عدن',
+    cityId: 'aden',
     verified: true,
     createdDaysAgo: 8,
   },
@@ -110,6 +142,7 @@ const ALL_MOCK_LISTINGS = [
     type: 'sell',
     locationEn: 'Aden',
     locationAr: 'عدن',
+    cityId: 'aden',
     verified: false,
     createdDaysAgo: 4,
   },
@@ -125,6 +158,7 @@ const ALL_MOCK_LISTINGS = [
     type: 'sell',
     locationEn: 'Taiz',
     locationAr: 'تعز',
+    cityId: 'taiz',
     verified: false,
     createdDaysAgo: 10,
   },
@@ -138,8 +172,9 @@ const ALL_MOCK_LISTINGS = [
     periodEn: 'Month',
     periodAr: 'شهر',
     type: 'rent',
-    locationEn: 'Aden',
-    locationAr: 'عدن',
+    locationEn: 'Ibb',
+    locationAr: 'إب',
+    cityId: 'ibb',
     verified: true,
     createdDaysAgo: 14,
   },
@@ -153,8 +188,9 @@ const ALL_MOCK_LISTINGS = [
     periodEn: 'Day',
     periodAr: 'يوم',
     type: 'rent',
-    locationEn: "Sana'a",
-    locationAr: 'صنعاء',
+    locationEn: 'Hadhramaut',
+    locationAr: 'حضرموت',
+    cityId: 'hadhramaut',
     verified: false,
     createdDaysAgo: 11,
   }
@@ -172,16 +208,15 @@ export default function SearchResultsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [onlyVerified, setOnlyVerified] = useState(false);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Available unique fields for filters options
+  // Filter Categories list
   const categoryOptions = ['cars', 'properties', 'electronics', 'furniture', 'services', 'tools', 'fashion', 'kids', 'hobbies', 'wedding_halls', 'chalets'];
-  const locationOptions = ['Sana\'a', 'Aden', 'Taiz'];
 
   // Handle category checkbox change
   const handleCategoryChange = (cat: string) => {
@@ -190,10 +225,10 @@ export default function SearchResultsPage() {
     );
   };
 
-  // Handle location checkbox change
-  const handleLocationChange = (loc: string) => {
-    setSelectedLocations(prev =>
-      prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc]
+  // Handle city selection (toggling active states)
+  const handleCityToggle = (cityId: string) => {
+    setSelectedCities(prev =>
+      prev.includes(cityId) ? prev.filter(id => id !== cityId) : [...prev, cityId]
     );
   };
 
@@ -202,7 +237,7 @@ export default function SearchResultsPage() {
     setSearchQuery('');
     setSelectedType(null);
     setSelectedCategories([]);
-    setSelectedLocations([]);
+    setSelectedCities([]);
     setOnlyVerified(false);
     setMinPrice('');
     setMaxPrice('');
@@ -226,8 +261,8 @@ export default function SearchResultsPage() {
       // 3. Category Match
       if (selectedCategories.length > 0 && !selectedCategories.includes(item.category)) return false;
 
-      // 4. Location Match
-      if (selectedLocations.length > 0 && !selectedLocations.includes(item.locationEn)) return false;
+      // 4. City Location Match
+      if (selectedCities.length > 0 && !selectedCities.includes(item.cityId)) return false;
 
       // 5. Verification Status Match
       if (onlyVerified && !item.verified) return false;
@@ -238,13 +273,11 @@ export default function SearchResultsPage() {
 
       return true;
     }).sort((a, b) => {
-      // Sorting
       if (sortBy === 'priceAsc') return a.price - b.price;
       if (sortBy === 'priceDesc') return b.price - a.price;
-      // Newest first by default
       return a.createdDaysAgo - b.createdDaysAgo;
     });
-  }, [searchQuery, selectedType, selectedCategories, selectedLocations, onlyVerified, minPrice, maxPrice, sortBy]);
+  }, [searchQuery, selectedType, selectedCategories, selectedCities, onlyVerified, minPrice, maxPrice, sortBy]);
 
   return (
     <div className="min-h-screen bg-deumah-gray-50 text-deumah-navy-950 flex flex-col">
@@ -253,7 +286,7 @@ export default function SearchResultsPage() {
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         
         {/* Top search & bar options */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-deumah border border-deumah-gray-200 shadow-sm">
+        <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-deumah border border-deumah-gray-200 shadow-sm">
           <div className="relative flex-1 max-w-md">
             <input
               type="text"
@@ -295,6 +328,31 @@ export default function SearchResultsPage() {
               </svg>
               {t('filters')}
             </button>
+          </div>
+        </div>
+
+        {/* Premium City Selector Horizontal Bar */}
+        <div className="mb-6 bg-white p-4 rounded-deumah border border-deumah-gray-200 shadow-sm">
+          <p className="text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">
+            {isAr ? 'تصفية حسب المحافظة في اليمن' : 'Filter by City in Yemen'}
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+            {YEMEN_CITIES.map(city => {
+              const isActive = selectedCities.includes(city.id);
+              return (
+                <button
+                  key={city.id}
+                  onClick={() => handleCityToggle(city.id)}
+                  className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-medium border transition snap-start ${
+                    isActive 
+                      ? 'bg-deumah-green-700 text-white border-deumah-green-700 shadow-sm' 
+                      : 'bg-deumah-gray-50 text-deumah-gray-700 border-deumah-gray-200 hover:border-deumah-gray-300'
+                  }`}
+                >
+                  {isAr ? city.ar : city.en}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -371,19 +429,19 @@ export default function SearchResultsPage() {
                 </div>
               </div>
 
-              {/* Locations checklist */}
+              {/* Locations sidebar check list */}
               <div>
-                <h3 className="text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">{t('locations')}</h3>
-                <div className="space-y-1.5">
-                  {locationOptions.map(loc => (
-                    <label key={loc} className="flex items-center gap-2.5 text-xs text-deumah-gray-700 hover:text-deumah-navy-950 cursor-pointer">
+                <h3 className="text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">{isAr ? 'المحافظات' : 'Cities'}</h3>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 border border-deumah-gray-100 p-2 rounded bg-deumah-gray-50">
+                  {YEMEN_CITIES.map(city => (
+                    <label key={city.id} className="flex items-center gap-2.5 text-xs text-deumah-gray-700 hover:text-deumah-navy-950 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={selectedLocations.includes(loc)}
-                        onChange={() => handleLocationChange(loc)}
+                        checked={selectedCities.includes(city.id)}
+                        onChange={() => handleCityToggle(city.id)}
                         className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
                       />
-                      <span>{isAr ? (loc === 'Sana\'a' ? 'صنعاء' : loc === 'Aden' ? 'عدن' : 'تعز') : loc}</span>
+                      <span>{isAr ? city.ar : city.en}</span>
                     </label>
                   ))}
                 </div>
@@ -412,6 +470,8 @@ export default function SearchResultsPage() {
                 {filteredListings.map(item => (
                   <ListingCard
                     key={item.id}
+                    id={item.id}
+                    locale={locale}
                     title={isAr ? item.titleAr : item.titleEn}
                     price={isAr ? `${item.price} دولار ${item.periodAr ? `/ ${item.periodAr}` : ''}` : `$${item.price} ${item.periodEn ? `/ ${item.periodEn}` : ''}`}
                     location={isAr ? item.locationAr : item.locationEn}
@@ -511,17 +571,17 @@ export default function SearchResultsPage() {
               </div>
 
               <div>
-                <h3 className="text-xs font-bold text-deumah-gray-500 uppercase mb-2">{t('locations')}</h3>
-                <div className="space-y-1.5">
-                  {locationOptions.map(loc => (
-                    <label key={loc} className="flex items-center gap-2.5 text-xs text-deumah-gray-700 cursor-pointer">
+                <h3 className="text-xs font-bold text-deumah-gray-500 uppercase mb-2">{isAr ? 'المحافظات' : 'Cities'}</h3>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 border border-deumah-gray-100 p-2 rounded bg-deumah-gray-50">
+                  {YEMEN_CITIES.map(city => (
+                    <label key={city.id} className="flex items-center gap-2.5 text-xs text-deumah-gray-700 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={selectedLocations.includes(loc)}
-                        onChange={() => handleLocationChange(loc)}
+                        checked={selectedCities.includes(city.id)}
+                        onChange={() => handleCityToggle(city.id)}
                         className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
                       />
-                      <span>{isAr ? (loc === 'Sana\'a' ? 'صنعاء' : loc === 'Aden' ? 'عدن' : 'تعز') : loc}</span>
+                      <span>{isAr ? city.ar : city.en}</span>
                     </label>
                   ))}
                 </div>

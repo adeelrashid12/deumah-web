@@ -80,7 +80,7 @@ const ALL_MOCK_LISTINGS = [
     category: 'electronics',
     image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
     titleEn: 'Canon 80D Camera',
-    titleAr: 'كاميرا كانون 80D',
+    titleAr: 'كاميرا Canon 80D',
     price: 450,
     periodEn: '',
     periodAr: '',
@@ -614,19 +614,25 @@ function SearchResultsPage() {
           <div className="flex-1">
             {filteredListings.length > 0 ? (
               <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredListings.map(item => (
-                  <ListingCard
-                    key={item.id}
-                    id={item.id}
-                    locale={locale}
-                    title={isAr ? item.titleAr : item.titleEn}
-                    price={isAr ? `${item.price} دولار ${item.periodAr ? `/ ${item.periodAr}` : ''}` : `$${item.price} ${item.periodEn ? `/ ${item.periodEn}` : ''}`}
-                    location={isAr ? item.locationAr : item.locationEn}
-                    image={item.image}
-                    badge={item.type === 'sell' ? listT('sell') : listT('rent')}
-                    badgeTone={item.type === 'sell' ? 'sell' : 'rent'}
-                  />
-                ))}
+                {filteredListings.map(item => {
+                  const toArabicNumerals = (num: number | string): string => {
+                    const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+                    return num.toString().replace(/[0-9]/g, w => arabicDigits[+w]);
+                  };
+                  return (
+                    <ListingCard
+                      key={item.id}
+                      id={item.id}
+                      locale={locale}
+                      title={isAr ? item.titleAr : item.titleEn}
+                      price={isAr ? `${toArabicNumerals(item.price)} دولار ${item.periodAr ? `/ ${item.periodAr}` : ''}` : `$${item.price} ${item.periodEn ? `/ ${item.periodEn}` : ''}`}
+                      location={isAr ? item.locationAr : item.locationEn}
+                      image={item.image}
+                      badge={item.type === 'sell' ? listT('sell') : listT('rent')}
+                      badgeTone={item.type === 'sell' ? 'sell' : 'rent'}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-16 bg-white rounded-deumah border border-deumah-gray-200 p-8 shadow-sm">

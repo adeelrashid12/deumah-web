@@ -118,5 +118,29 @@
     "viewMap": "View Map",
     "hideMap": "Hide Map",
     "searchPlaceholder": "Search listings..."
+  },
+  "DetailsPage": {
+    "specs": "Specifications",
+    "verifiedSeller": "Verified Seller",
+    "contactOwner": "Contact Owner",
+    "sendMessage": "Send Message",
+    "messagePlaceholder": "Type your message here...",
+    "messageSuccess": "Message sent successfully!",
+    "calendarTitle": "Select Rental Period",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "totalPrice": "Total Price",
+    "days": "days",
+    "purchaseInquiry": "Purchase Inquiry",
+    "condition": "Condition",
+    "brand": "Brand",
+    "model": "Model",
+    "back": "Back to Listings",
+    "photos": "Photos",
+    "video": "Video",
+    "viewVideo": "Watch short walk-through video",
+    "locationMap": "Location Map",
+    "membersince": "Member since",
+    "responserate": "Response rate"
   }
 }

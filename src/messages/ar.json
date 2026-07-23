@@ -118,5 +118,29 @@
     "viewMap": "عرض الخريطة",
     "hideMap": "إخفاء الخريطة",
     "searchPlaceholder": "البحث في الإعلانات..."
+  },
+  "DetailsPage": {
+    "specs": "المواصفات",
+    "verifiedSeller": "بائع موثوق",
+    "contactOwner": "الاتصال بالمالك",
+    "sendMessage": "أرسل رسالة",
+    "messagePlaceholder": "اكتب رسالتك هنا...",
+    "messageSuccess": "تم إرسال الرسالة بنجاح!",
+    "calendarTitle": "حدد فترة الإيجار",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "totalPrice": "إجمالي السعر",
+    "days": "أيام",
+    "purchaseInquiry": "طلب شراء",
+    "condition": "الحالة",
+    "brand": "العلامة التجارية",
+    "model": "الموديل",
+    "back": "العودة إلى الإعلانات",
+    "photos": "الصور",
+    "video": "فيديو",
+    "viewVideo": "مشاهدة فيديو تعريفي قصير",
+    "locationMap": "خريطة الموقع",
+    "membersince": "عضو منذ",
+    "responserate": "معدل الاستجابة"
   }
 }

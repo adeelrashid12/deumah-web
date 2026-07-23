@@ -281,6 +281,20 @@ function SearchResultsPage() {
   // Filter Categories list
   const categoryOptions = ['cars', 'properties', 'electronics', 'furniture', 'services', 'tools', 'fashion', 'kids', 'hobbies', 'wedding_halls', 'chalets'];
 
+  const CATEGORY_EMOJIS: Record<string, string> = {
+    cars: '🚗',
+    properties: '🏠',
+    electronics: '💻',
+    furniture: '🛋️',
+    services: '🔧',
+    tools: '🛠️',
+    fashion: '👕',
+    kids: '👶',
+    hobbies: '🎨',
+    wedding_halls: '🏰',
+    chalets: '🏡'
+  };
+
   // Handle category checkbox change
   const handleCategoryChange = (cat: string) => {
     setSelectedCategories(prev =>
@@ -530,7 +544,7 @@ function SearchResultsPage() {
                         onChange={() => handleCategoryChange(cat)}
                         className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                       />
-                      <span>{catT(cat)}</span>
+                      <span>{CATEGORY_EMOJIS[cat] || ''} {catT(cat)}</span>
                     </label>
                   ))}
                 </div>
@@ -717,7 +731,7 @@ function SearchResultsPage() {
                         onChange={() => handleCategoryChange(cat)}
                         className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                       />
-                      <span>{catT(cat)}</span>
+                      <span>{CATEGORY_EMOJIS[cat] || ''} {catT(cat)}</span>
                     </label>
                   ))}
                 </div>

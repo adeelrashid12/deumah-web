@@ -49,6 +49,10 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'صنعاء • حدة',
     cityId: 'sanaa',
     verified: true,
+    newToday: false,
+    negotiable: true,
+    deliveryAvailable: false,
+    freeDelivery: true,
     createdDaysAgo: 2,
   },
   {
@@ -65,6 +69,10 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'صنعاء • السبعين',
     cityId: 'sanaa',
     verified: true,
+    newToday: false,
+    negotiable: false,
+    deliveryAvailable: true,
+    freeDelivery: false,
     createdDaysAgo: 5,
   },
   {
@@ -81,7 +89,11 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'صنعاء • التحرير',
     cityId: 'sanaa',
     verified: false,
-    createdDaysAgo: 1,
+    newToday: true,
+    negotiable: false,
+    deliveryAvailable: false,
+    freeDelivery: false,
+    createdDaysAgo: 0,
   },
   {
     id: '4',
@@ -97,6 +109,10 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'صنعاء • شعوب',
     cityId: 'sanaa',
     verified: false,
+    newToday: false,
+    negotiable: true,
+    deliveryAvailable: false,
+    freeDelivery: false,
     createdDaysAgo: 12,
   },
   {
@@ -113,7 +129,11 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'أمانة العاصمة • الوحدة',
     cityId: 'sanaa_city',
     verified: true,
-    createdDaysAgo: 3,
+    newToday: true,
+    negotiable: false,
+    deliveryAvailable: false,
+    freeDelivery: true,
+    createdDaysAgo: 0,
   },
   {
     id: '6',
@@ -129,6 +149,10 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'عدن • خور مكسر',
     cityId: 'aden',
     verified: true,
+    newToday: false,
+    negotiable: false,
+    deliveryAvailable: true,
+    freeDelivery: false,
     createdDaysAgo: 8,
   },
   {
@@ -145,7 +169,11 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'عدن • كريتر',
     cityId: 'aden',
     verified: false,
-    createdDaysAgo: 4,
+    newToday: true,
+    negotiable: false,
+    deliveryAvailable: false,
+    freeDelivery: false,
+    createdDaysAgo: 0,
   },
   {
     id: '8',
@@ -161,6 +189,10 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'تعز • القاهرة',
     cityId: 'taiz',
     verified: false,
+    newToday: false,
+    negotiable: true,
+    deliveryAvailable: false,
+    freeDelivery: false,
     createdDaysAgo: 10,
   },
   {
@@ -177,6 +209,10 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'إب • الظهار',
     cityId: 'ibb',
     verified: true,
+    newToday: false,
+    negotiable: false,
+    deliveryAvailable: true,
+    freeDelivery: false,
     createdDaysAgo: 14,
   },
   {
@@ -193,6 +229,10 @@ const ALL_MOCK_LISTINGS = [
     locationAr: 'حضرموت • المكلا',
     cityId: 'hadhramaut',
     verified: false,
+    newToday: false,
+    negotiable: false,
+    deliveryAvailable: false,
+    freeDelivery: true,
     createdDaysAgo: 11,
   }
 ];
@@ -214,7 +254,14 @@ function SearchResultsPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  
+  // New Checklist Filters
   const [onlyVerified, setOnlyVerified] = useState(false);
+  const [newToday, setNewToday] = useState(false);
+  const [negotiable, setNegotiable] = useState(false);
+  const [deliveryAvailable, setDeliveryAvailable] = useState(false);
+  const [freeDelivery, setFreeDelivery] = useState(false);
+
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -255,6 +302,10 @@ function SearchResultsPage() {
     setSelectedCategories([]);
     setSelectedCities([]);
     setOnlyVerified(false);
+    setNewToday(false);
+    setNegotiable(false);
+    setDeliveryAvailable(false);
+    setFreeDelivery(false);
     setMinPrice('');
     setMaxPrice('');
     setSortBy('newest');
@@ -283,6 +334,18 @@ function SearchResultsPage() {
       // 5. Verification Status Match
       if (onlyVerified && !item.verified) return false;
 
+      // 5b. New Today Match
+      if (newToday && !item.newToday) return false;
+
+      // 5c. Negotiable Match
+      if (negotiable && !item.negotiable) return false;
+
+      // 5d. Delivery Available Match
+      if (deliveryAvailable && !item.deliveryAvailable) return false;
+
+      // 5e. Free Delivery Match
+      if (freeDelivery && !item.freeDelivery) return false;
+
       // 6. Price Bounds Match
       if (minPrice && item.price < parseFloat(minPrice)) return false;
       if (maxPrice && item.price > parseFloat(maxPrice)) return false;
@@ -293,7 +356,7 @@ function SearchResultsPage() {
       if (sortBy === 'priceDesc') return b.price - a.price;
       return a.createdDaysAgo - b.createdDaysAgo;
     });
-  }, [searchQuery, selectedType, selectedCategories, selectedCities, onlyVerified, minPrice, maxPrice, sortBy]);
+  }, [searchQuery, selectedType, selectedCategories, selectedCities, onlyVerified, newToday, negotiable, deliveryAvailable, freeDelivery, minPrice, maxPrice, sortBy]);
 
   return (
     <div className="min-h-screen bg-deumah-gray-50 text-deumah-navy-950 flex flex-col">
@@ -491,8 +554,8 @@ function SearchResultsPage() {
                 </div>
               </div>
 
-              {/* Verified owners toggle */}
-              <div className="pt-2 border-t border-deumah-gray-100">
+              {/* Verified owners toggle & additional filters */}
+              <div className="pt-2 border-t border-deumah-gray-100 space-y-2.5">
                 <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -500,7 +563,47 @@ function SearchResultsPage() {
                     onChange={e => setOnlyVerified(e.target.checked)}
                     className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
                   />
-                  <span>{t('verifiedOnly')}</span>
+                  <span>{t('verifiedSellers')}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newToday}
+                    onChange={e => setNewToday(e.target.checked)}
+                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                  />
+                  <span>{t('newToday')}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={negotiable}
+                    onChange={e => setNegotiable(e.target.checked)}
+                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                  />
+                  <span>{t('negotiable')}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={deliveryAvailable}
+                    onChange={e => setDeliveryAvailable(e.target.checked)}
+                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                  />
+                  <span>{t('deliveryAvailable')}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={freeDelivery}
+                    onChange={e => setFreeDelivery(e.target.checked)}
+                    className="rounded border-deumah-gray-200 text-deumah-green-700 focus:ring-deumah-green-600 size-4 cursor-pointer"
+                  />
+                  <span>{t('freeDelivery')}</span>
                 </label>
               </div>
 
@@ -631,7 +734,7 @@ function SearchResultsPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="space-y-2.5">
                 <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -639,7 +742,47 @@ function SearchResultsPage() {
                     onChange={e => setOnlyVerified(e.target.checked)}
                     className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
                   />
-                  <span>{t('verifiedOnly')}</span>
+                  <span>{t('verifiedSellers')}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newToday}
+                    onChange={e => setNewToday(e.target.checked)}
+                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                  />
+                  <span>{t('newToday')}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={negotiable}
+                    onChange={e => setNegotiable(e.target.checked)}
+                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                  />
+                  <span>{t('negotiable')}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={deliveryAvailable}
+                    onChange={e => setDeliveryAvailable(e.target.checked)}
+                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                  />
+                  <span>{t('deliveryAvailable')}</span>
+                </label>
+
+                <label className="flex items-center gap-2.5 text-xs font-semibold text-deumah-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={freeDelivery}
+                    onChange={e => setFreeDelivery(e.target.checked)}
+                    className="rounded border-deumah-gray-200 text-deumah-green-700 size-4 cursor-pointer"
+                  />
+                  <span>{t('freeDelivery')}</span>
                 </label>
               </div>
             </div>

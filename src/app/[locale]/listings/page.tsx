@@ -197,7 +197,9 @@ const ALL_MOCK_LISTINGS = [
   }
 ];
 
-export default function SearchResultsPage() {
+import { Suspense } from 'react';
+
+function SearchResultsPage() {
   const locale = useLocale();
   const isAr = locale === 'ar';
 
@@ -301,7 +303,7 @@ export default function SearchResultsPage() {
         
         {/* Top search & bar options */}
         <div className="mb-4 bg-white p-3 rounded-deumah border border-deumah-gray-200 shadow-sm">
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_180px_180px_160px_auto] items-center">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-[1fr_210px_210px_160px_auto] items-center">
             {/* Search Input */}
             <div className="relative flex items-center border border-deumah-gray-200 rounded-deumah-sm px-3 focus-within:border-deumah-green-600 transition">
               <svg className="size-5 text-deumah-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -323,7 +325,7 @@ export default function SearchResultsPage() {
                 const val = e.target.value;
                 setSelectedCategories(val ? [val] : []);
               }}
-              className="w-full border border-deumah-gray-200 rounded-deumah-sm px-3 py-2.5 text-sm outline-none bg-transparent cursor-pointer focus:border-deumah-green-600"
+              className="w-full border border-deumah-gray-200 rounded-deumah-sm pl-3 pr-8 py-2.5 text-sm outline-none bg-transparent cursor-pointer focus:border-deumah-green-600"
             >
               <option value="">{catT('title')}</option>
               {categoryOptions.map(cat => (
@@ -338,7 +340,7 @@ export default function SearchResultsPage() {
                 const val = e.target.value;
                 setSelectedCities(val ? [val] : []);
               }}
-              className="w-full border border-deumah-gray-200 rounded-deumah-sm px-3 py-2.5 text-sm outline-none bg-transparent cursor-pointer focus:border-deumah-green-600"
+              className="w-full border border-deumah-gray-200 rounded-deumah-sm pl-3 pr-8 py-2.5 text-sm outline-none bg-transparent cursor-pointer focus:border-deumah-green-600"
             >
               <option value="">{isAr ? 'المحافظة' : 'City'}</option>
               {YEMEN_CITIES.map(city => (
@@ -662,5 +664,17 @@ export default function SearchResultsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ListingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-deumah-gray-50 flex items-center justify-center text-deumah-gray-500 font-medium">
+        Loading...
+      </div>
+    }>
+      <SearchResultsPage />
+    </Suspense>
   );
 }

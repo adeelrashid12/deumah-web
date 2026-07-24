@@ -7,6 +7,7 @@ import {CategoryCard} from './category-card';
 import {ListingCard} from './listing-card';
 import {CartIcon, HomeIcon, SearchIcon, ShieldIcon, TagIcon, TruckIcon} from './icons';
 import {DeumahHeader} from './deumah-header';
+import {Link} from '@/i18n/navigation';
 
 const YEMEN_CITIES = [
   { id: 'sanaa_city', en: "Sana'a City (Capital Municipality)", ar: "أمانة العاصمة" },
@@ -105,7 +106,7 @@ export function DeumahHome(){
 
    <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8"><div className="flex overflow-x-auto gap-6 pb-4 sm:grid sm:grid-cols-2 lg:grid-cols-5 rounded-deumah bg-deumah-navy-950 p-6 text-white scrollbar-none snap-x snap-mandatory">{['verified','payments','delivery','support','safe'].map(key=><div key={key} className="flex gap-3 shrink-0 w-[220px] sm:w-auto snap-start"><ShieldIcon className="size-7 shrink-0 text-deumah-gold-500"/><div><h3 className="font-semibold">{trust(key as never)}</h3><p className="mt-1 text-sm text-white/70">{trust(`${key}Description` as never)}</p></div></div>)}</div></section>
 
-   <section className="mx-auto grid max-w-7xl gap-5 px-4 pb-12 sm:px-6 lg:grid-cols-2 lg:px-8"><article className="rounded-deumah bg-deumah-green-100 p-7"><h2 className="text-2xl font-semibold text-deumah-green-700">{promos('postTitle')}</h2><p className="mt-2 text-deumah-gray-500">{promos('postDescription')}</p><button className="mt-5 rounded-deumah-sm bg-deumah-green-700 px-5 py-3 font-semibold text-white">{promos('postButton')}</button></article><article className="rounded-deumah bg-white p-7 shadow-deumah-card"><h2 className="text-2xl font-semibold">{promos('shippingTitle')}</h2><p className="mt-2 text-deumah-gray-500">{promos('shippingDescription')}</p><button className="mt-5 rounded-deumah-sm bg-deumah-green-700 px-5 py-3 font-semibold text-white">{promos('shippingButton')}</button></article></section>
+   <section className="mx-auto grid max-w-7xl gap-5 px-4 pb-12 sm:px-6 lg:grid-cols-2 lg:px-8"><article className="rounded-deumah bg-deumah-green-100 p-7"><h2 className="text-2xl font-semibold text-deumah-green-700">{promos('postTitle')}</h2><p className="mt-2 text-deumah-gray-500">{promos('postDescription')}</p><Link href="/post-ad" className="mt-5 inline-block rounded-deumah-sm bg-deumah-green-700 px-5 py-3 font-semibold text-white text-center hover:bg-deumah-green-600 transition">{promos('postButton')}</Link></article><article className="rounded-deumah bg-white p-7 shadow-deumah-card"><h2 className="text-2xl font-semibold">{promos('shippingTitle')}</h2><p className="mt-2 text-deumah-gray-500">{promos('shippingDescription')}</p><button className="mt-5 rounded-deumah-sm bg-deumah-green-700 px-5 py-3 font-semibold text-white">{promos('shippingButton')}</button></article></section>
   </main>
  </div>;
 }

@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useState, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { useRouter } from '@/i18n/navigation';
+
+interface PhotoItem {
+  id: string;
+  name: string;
+  url: string;
+}
 
 export default function PostAdPage() {
   const locale = useLocale();
@@ -17,9 +23,13 @@ export default function PostAdPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [currency, setCurrency] = useState<'USD' | 'YER'>('USD');
   const [billingPeriod, setBillingPeriod] = useState('day');
-  const [city, setCity] = useState('sanaa');
+  const [governorate, setGovernorate] = useState('sanaa_city');
   const [area, setArea] = useState('');
+
+  // General Item Condition
+  const [itemCondition, setItemCondition] = useState('good');
 
   // Contact Preference States
   const [contactCall, setContactCall] = useState(true);
@@ -27,39 +37,101 @@ export default function PostAdPage() {
   const [contactWhatsApp, setContactWhatsApp] = useState(false);
 
   // Category Specific States
+  // 1. Cars
   const [carBrand, setCarBrand] = useState('');
   const [carModel, setCarModel] = useState('');
   const [carYear, setCarYear] = useState('');
   const [carTransmission, setCarTransmission] = useState('automatic');
   const [carFuel, setCarFuel] = useState('gasoline');
+  const [carMileage, setCarMileage] = useState('');
 
+  // 2. Properties
   const [propType, setPropType] = useState('apartment');
   const [propBedrooms, setPropBedrooms] = useState('');
   const [propBathrooms, setPropBathrooms] = useState('');
   const [propSize, setPropSize] = useState('');
   const [propFurnished, setPropFurnished] = useState('no');
 
+  // 3. Wedding Halls
   const [hallCapacity, setHallCapacity] = useState('');
   const [hallSound, setHallSound] = useState('yes');
   const [hallAC, setHallAC] = useState('central');
-  const [hallValet, setHallValet] = useState('yes');
+  const [hallParking, setHallParking] = useState('yes');
 
+  // 4. Chalets
+  const [chaletCapacity, setChaletCapacity] = useState('');
+  const [chaletBedrooms, setChaletBedrooms] = useState('');
   const [chaletPool, setChaletPool] = useState('yes');
-  const [chaletRooms, setChaletRooms] = useState('');
+  const [chaletOvernight, setChaletOvernight] = useState('yes');
 
+  // 5. Electronics
   const [elecBrand, setElecBrand] = useState('');
   const [elecModel, setElecModel] = useState('');
-  const [elecCondition, setElecCondition] = useState('new');
+  const [elecWarranty, setElecWarranty] = useState('no');
+
+  // 6. Tools
+  const [toolsBrand, setToolsBrand] = useState('');
+  const [toolsModel, setToolsModel] = useState('');
+
+  // 7. Services
+  const [serviceType, setServiceType] = useState('maintenance');
+  const [serviceArea, setServiceArea] = useState('');
+  const [servicePricing, setServicePricing] = useState('fixed');
 
   // Media Mock States
-  const [photosList, setPhotosList] = useState<{ id: string; name: string; url: string }[]>([]);
+  const [photosList, setPhotosList] = useState<PhotoItem[]>([]);
   const [videoFile, setVideoFile] = useState<{ name: string; size: string } | null>(null);
 
-  // Validation / Loading States
-  const [showToast, setShowToast] = useState(false);
+  // Upload Progress State
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadStatusMsg, setUploadStatusMsg] = useState('');
+
+  // Terms and Agreement Checkbox
+  const [agreeTerms, setAgreeTerms] = useState(false);
+
+  // Overlay Screens
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [moderationStatus, setModerationStatus] = useState<'pending' | 'approved'>('pending');
+
+  // Validation / Error States
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Handle Mock Image Upload
+  // Load draft if exists
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('deumah_ad_draft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        setTitle(draft.title || '');
+        setDescription(draft.description || '');
+        setPrice(draft.price || '');
+        setCategory(draft.category || 'cars');
+        setTransactionType(draft.transactionType || 'rent');
+        setCurrency(draft.currency || 'USD');
+        setGovernorate(draft.governorate || 'sanaa_city');
+        setArea(draft.area || '');
+      } catch (e) {}
+    }
+  }, []);
+
+  // Save Draft Functionality
+  const handleSaveDraft = () => {
+    const draftData = {
+      title,
+      description,
+      price,
+      category,
+      transactionType,
+      currency,
+      governorate,
+      area
+    };
+    localStorage.setItem('deumah_ad_draft', JSON.stringify(draftData));
+    alert(isAr ? 'تم حفظ الإعلان كمسودة بنجاح!' : 'Ad saved as draft successfully!');
+  };
+
+  // Handle Photo Upload with dynamic simulated progress & HEIC support
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const filesArray = Array.from(e.target.files);
@@ -70,57 +142,124 @@ export default function PostAdPage() {
     }
     setErrorMsg('');
 
-    const newPhotos = filesArray.map((file, idx) => ({
-      id: `${Date.now()}-${idx}`,
-      name: file.name,
-      url: URL.createObjectURL(file)
-    }));
-
-    setPhotosList(prev => [...prev, ...newPhotos]);
-  };
-
-  // Remove Photo
-  const handleRemovePhoto = (id: string) => {
-    setPhotosList(prev => prev.filter(photo => photo.id !== id));
-  };
-
-  // Handle Mock Video Upload
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
+    // Check for HEIC format and size validation
+    const hasHeic = filesArray.some(f => f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif'));
     
-    // Check file size (approx 100MB limit)
-    const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > 100) {
-      setErrorMsg(isAr ? 'حجم الفيديو كبير جداً! الحد الأقصى ١٠٠ ميجابايت.' : 'Video size is too large! Maximum limit is 100MB.');
-      return;
-    }
-    setErrorMsg('');
-    setVideoFile({
-      name: file.name,
-      size: `${fileSizeMB.toFixed(1)} MB`
+    // Simulate dynamic upload progress + compression
+    let progress = 0;
+    setUploadProgress(0);
+    setUploadStatusMsg(hasHeic 
+      ? (isAr ? 'جاري تحويل صيغة HEIC وضغط الصور...' : 'Converting HEIC format & compressing images...') 
+      : (isAr ? 'جاري رفع الصور وضغطها تلقائياً...' : 'Uploading & compressing images automatically...'));
+
+    const interval = setInterval(() => {
+      progress += 20;
+      setUploadProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          setUploadProgress(null);
+          setUploadStatusMsg('');
+
+          const newPhotos = filesArray.map((file, idx) => ({
+            id: `${Date.now()}-${idx}`,
+            name: file.name,
+            url: URL.createObjectURL(file)
+          }));
+
+          setPhotosList(prev => [...prev, ...newPhotos]);
+        }, 500);
+      }
+    }, 200);
+  };
+
+  // Photo reordering helpers
+  const movePhotoLeft = (index: number) => {
+    if (index === 0) return;
+    setPhotosList(prev => {
+      const copy = [...prev];
+      const temp = copy[index];
+      copy[index] = copy[index - 1];
+      copy[index - 1] = temp;
+      return copy;
     });
   };
 
-  // Remove Video
+  const movePhotoRight = (index: number) => {
+    if (index === photosList.length - 1) return;
+    setPhotosList(prev => {
+      const copy = [...prev];
+      const temp = copy[index];
+      copy[index] = copy[index + 1];
+      copy[index + 1] = temp;
+      return copy;
+    });
+  };
+
+  const makePhotoCover = (index: number) => {
+    setPhotosList(prev => {
+      const copy = [...prev];
+      const selected = copy.splice(index, 1)[0];
+      return [selected, ...copy];
+    });
+  };
+
+  const handleRemovePhoto = (id: string) => {
+    setPhotosList(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Video Upload
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const fileSizeMB = file.size / (1024 * 1024);
+
+    if (fileSizeMB > 100) {
+      setErrorMsg(isAr ? 'حجم الفيديو يتجاوز ١٠٠ ميجابايت!' : 'Video size exceeds 100MB!');
+      return;
+    }
+    setErrorMsg('');
+
+    let progress = 0;
+    setUploadProgress(0);
+    setUploadStatusMsg(isAr ? 'جاري ضغط ورفع مقطع الفيديو...' : 'Compressing & uploading video file...');
+
+    const interval = setInterval(() => {
+      progress += 25;
+      setUploadProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          setUploadProgress(null);
+          setUploadStatusMsg('');
+          setVideoFile({
+            name: file.name,
+            size: `${fileSizeMB.toFixed(1)} MB`
+          });
+        }, 500);
+      }
+    }, 250);
+  };
+
   const handleRemoveVideo = () => {
     setVideoFile(null);
   };
 
-  // Form Submission
+  // Final Publish Handler
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !price || !description.trim()) {
       setErrorMsg(isAr ? 'يرجى تعبئة كافة الحقول الأساسية!' : 'Please fill out all required basic fields!');
       return;
     }
+    if (!agreeTerms) {
+      setErrorMsg(isAr ? 'يرجى الموافقة على شروط الاستخدام وقواعد النشر!' : 'Please agree to the Terms of Use and listing rules!');
+      return;
+    }
 
-    setShowToast(true);
     setErrorMsg('');
-    setTimeout(() => {
-      setShowToast(false);
-      router.push('/');
-    }, 2500);
+    setModerationStatus('pending');
+    setShowSuccessModal(true);
   };
 
   return (
@@ -129,17 +268,26 @@ export default function PostAdPage() {
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         
-        {/* Page title */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-deumah-navy-950 tracking-tight font-heading">
-            {isAr ? 'انشر إعلاناً جديداً' : 'Post a New Ad'}
-          </h1>
-          <p className="text-sm text-deumah-gray-500 mt-1 font-medium">
-            {isAr ? 'املأ التفاصيل لتبدأ في الوصول لآلاف المهتمين في اليمن' : 'Fill out details to start reaching thousands of buyers in Yemen'}
-          </p>
+        {/* Title */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-deumah-navy-950 tracking-tight font-heading">
+              {isAr ? 'انشر إعلاناً جديداً' : 'Post a New Ad'}
+            </h1>
+            <p className="text-sm text-deumah-gray-500 mt-1 font-medium">
+              {isAr ? 'املأ التفاصيل لتبدأ في الوصول لآلاف المهتمين في اليمن' : 'Fill out details to start reaching thousands of buyers in Yemen'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            className="self-start sm:self-center px-4 py-2 border border-deumah-gray-300 text-deumah-gray-700 bg-white rounded-deumah-sm text-xs font-bold shadow-sm hover:bg-deumah-gray-50 transition"
+          >
+            💾 {isAr ? 'حفظ كمسودة' : 'Save as Draft'}
+          </button>
         </div>
 
-        {/* Form panel */}
+        {/* Form Panel */}
         <form onSubmit={handleSubmit} className="bg-white rounded-deumah border border-deumah-gray-200 p-6 md:p-8 shadow-sm space-y-6">
           
           {/* Error Message */}
@@ -149,7 +297,23 @@ export default function PostAdPage() {
             </div>
           )}
 
-          {/* Section 1: Transaction and Category */}
+          {/* Upload Progress Loader */}
+          {uploadProgress !== null && (
+            <div className="bg-deumah-green-50 border border-deumah-green-200 p-4 rounded-deumah space-y-2">
+              <div className="flex justify-between items-center text-xs font-bold text-deumah-green-800">
+                <span>{uploadStatusMsg}</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-deumah-green-100 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-deumah-green-700 h-full transition-all duration-200" 
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Section 1: Transaction & Category */}
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">
@@ -201,20 +365,20 @@ export default function PostAdPage() {
             </div>
           </div>
 
-          {/* Section 2: Dynamic Category Specific Fields */}
+          {/* Section 2: Dynamic Category Specific Details */}
           <div className="bg-deumah-gray-50/50 p-5 rounded-deumah border border-deumah-gray-200/60 space-y-4">
             <h3 className="text-xs font-bold text-deumah-navy-950 uppercase tracking-wider">
-              ⚙️ {isAr ? 'المواصفات الفنية للفئة' : 'Category Specifications'}
+              ⚙️ {isAr ? 'مواصفات الإعلان' : 'Category Details'}
             </h3>
 
-            {/* CARS SPEC FIELDS */}
+            {/* CARS */}
             {category === 'cars' && (
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 <div>
                   <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'الشركة المصنعة' : 'Brand'}</label>
                   <input
                     type="text"
-                    placeholder="e.g. Toyota, Lexus"
+                    placeholder="e.g. Toyota"
                     value={carBrand}
                     onChange={e => setCarBrand(e.target.value)}
                     className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
@@ -224,7 +388,7 @@ export default function PostAdPage() {
                   <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'الموديل' : 'Model'}</label>
                   <input
                     type="text"
-                    placeholder="e.g. Land Cruiser, RAV4"
+                    placeholder="e.g. Land Cruiser"
                     value={carModel}
                     onChange={e => setCarModel(e.target.value)}
                     className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
@@ -264,10 +428,20 @@ export default function PostAdPage() {
                     <option value="electric">{isAr ? 'كهربائي بالكامل' : 'Electric'}</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'المسافة المقطوعة (كم)' : 'Mileage (km)'}</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 50000"
+                    value={carMileage}
+                    onChange={e => setCarMileage(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  />
+                </div>
               </div>
             )}
 
-            {/* PROPERTIES SPEC FIELDS */}
+            {/* PROPERTIES */}
             {category === 'properties' && (
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 <div>
@@ -304,7 +478,7 @@ export default function PostAdPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'المساحة (متر مربع)' : 'Size (sqm)'}</label>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'المساحة (متر مربع)' : 'Area (sqm)'}</label>
                   <input
                     type="number"
                     placeholder="e.g. 120"
@@ -327,7 +501,7 @@ export default function PostAdPage() {
               </div>
             )}
 
-            {/* WEDDING HALLS SPEC FIELDS */}
+            {/* WEDDING HALLS */}
             {category === 'wedding_halls' && (
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 <div>
@@ -341,45 +515,65 @@ export default function PostAdPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'نظام صوتي DJ' : 'Sound System'}</label>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'مواقف سيارات' : 'Parking'}</label>
                   <select
-                    value={hallSound}
-                    onChange={e => setHallSound(e.target.value)}
-                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
-                  >
-                    <option value="yes">{isAr ? 'متوفر' : 'Available'}</option>
-                    <option value="no">{isAr ? 'غير متوفر' : 'Not Available'}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'نظام التكييف' : 'AC System'}</label>
-                  <select
-                    value={hallAC}
-                    onChange={e => setHallAC(e.target.value)}
-                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
-                  >
-                    <option value="central">{isAr ? 'تكييف مركزي' : 'Central AC'}</option>
-                    <option value="split">{isAr ? 'تكييف عادي' : 'Split AC'}</option>
-                    <option value="none">{isAr ? 'مراوح فقط' : 'Fans Only'}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'خدمة حراسة ومواقف' : 'Valet Parking'}</label>
-                  <select
-                    value={hallValet}
-                    onChange={e => setHallValet(e.target.value)}
+                    value={hallParking}
+                    onChange={e => setHallParking(e.target.value)}
                     className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
                   >
                     <option value="yes">{isAr ? 'نعم' : 'Yes'}</option>
                     <option value="no">{isAr ? 'لا' : 'No'}</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'نظام صوتي' : 'Sound System'}</label>
+                  <select
+                    value={hallSound}
+                    onChange={e => setHallSound(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  >
+                    <option value="yes">{isAr ? 'نعم' : 'Yes'}</option>
+                    <option value="no">{isAr ? 'لا' : 'No'}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'نظام التكييف' : 'Air Conditioning'}</label>
+                  <select
+                    value={hallAC}
+                    onChange={e => setHallAC(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  >
+                    <option value="central">{isAr ? 'مركزي' : 'Central'}</option>
+                    <option value="split">{isAr ? 'سبليت' : 'Split'}</option>
+                    <option value="none">{isAr ? 'بدون تكييف' : 'None'}</option>
+                  </select>
+                </div>
               </div>
             )}
 
-            {/* CHALETS SPEC FIELDS */}
+            {/* CHALETS */}
             {category === 'chalets' && (
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'السعة (أشخاص)' : 'Capacity (guests)'}</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 20"
+                    value={chaletCapacity}
+                    onChange={e => setChaletCapacity(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'عدد الغرف' : 'Bedrooms'}</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 2"
+                    value={chaletBedrooms}
+                    onChange={e => setChaletBedrooms(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  />
+                </div>
                 <div>
                   <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'وجود مسبح' : 'Pool'}</label>
                   <select
@@ -392,26 +586,27 @@ export default function PostAdPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'عدد الغرف' : 'Rooms Count'}</label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 2"
-                    value={chaletRooms}
-                    onChange={e => setChaletRooms(e.target.value)}
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'إمكانية المبيت' : 'Overnight Availability'}</label>
+                  <select
+                    value={chaletOvernight}
+                    onChange={e => setChaletOvernight(e.target.value)}
                     className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
-                  />
+                  >
+                    <option value="yes">{isAr ? 'نعم' : 'Yes'}</option>
+                    <option value="no">{isAr ? 'لا' : 'No'}</option>
+                  </select>
                 </div>
               </div>
             )}
 
-            {/* ELECTRONICS SPEC FIELDS */}
+            {/* ELECTRONICS */}
             {category === 'electronics' && (
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                 <div>
                   <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'الشركة المصنعة' : 'Brand'}</label>
                   <input
                     type="text"
-                    placeholder="e.g. Apple, Sony, Canon"
+                    placeholder="e.g. Apple"
                     value={elecBrand}
                     onChange={e => setElecBrand(e.target.value)}
                     className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
@@ -421,51 +616,139 @@ export default function PostAdPage() {
                   <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'الموديل' : 'Model'}</label>
                   <input
                     type="text"
-                    placeholder="e.g. iPhone 15, EOS 80D"
+                    placeholder="e.g. iPhone 15 Pro"
                     value={elecModel}
                     onChange={e => setElecModel(e.target.value)}
                     className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'حالة الجهاز' : 'Condition'}</label>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'الضمان' : 'Warranty'}</label>
                   <select
-                    value={elecCondition}
-                    onChange={e => setElecCondition(e.target.value)}
+                    value={elecWarranty}
+                    onChange={e => setElecWarranty(e.target.value)}
                     className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
                   >
-                    <option value="new">{isAr ? 'جديد تماماً' : 'Brand New'}</option>
-                    <option value="open_box">{isAr ? 'شبه جديد (كرتون مفتوح)' : 'Open Box'}</option>
-                    <option value="used">{isAr ? 'مستعمل نظيف' : 'Used (Clean)'}</option>
+                    <option value="no">{isAr ? 'بدون ضمان' : 'No'}</option>
+                    <option value="yes">{isAr ? 'متوفر' : 'Yes'}</option>
                   </select>
                 </div>
               </div>
             )}
 
-            {/* Fallback for Tools/Services */}
-            {(category === 'tools' || category === 'services') && (
-              <p className="text-xs text-deumah-gray-400 font-semibold italic">
-                {isAr ? 'هذه الفئة تستخدم مواصفات تعبئة الإعلان العامة فقط.' : 'This category relies on default basic ad attributes.'}
-              </p>
+            {/* TOOLS */}
+            {category === 'tools' && (
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'الشركة المصنعة' : 'Brand'}</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Bosch"
+                    value={toolsBrand}
+                    onChange={e => setToolsBrand(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'الموديل' : 'Model'}</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. GSB 18V-55"
+                    value={toolsModel}
+                    onChange={e => setToolsModel(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* SERVICES */}
+            {category === 'services' && (
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'نوع الخدمة' : 'Service Type'}</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Cleaning, Maintenance"
+                    value={serviceType}
+                    onChange={e => setServiceType(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'نطاق الخدمة' : 'Service Area'}</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Sana'a City"
+                    value={serviceArea}
+                    onChange={e => setServiceArea(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-deumah-gray-500 mb-1.5">{isAr ? 'طريقة احتساب السعر' : 'Pricing Method'}</label>
+                  <select
+                    value={servicePricing}
+                    onChange={e => setServicePricing(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                  >
+                    <option value="fixed">{isAr ? 'سعر ثابت' : 'Fixed Price'}</option>
+                    <option value="hourly">{isAr ? 'بالساعة' : 'Hourly'}</option>
+                    <option value="daily">{isAr ? 'باليوم' : 'Daily'}</option>
+                    <option value="negotiable">{isAr ? 'حسب الاتفاق' : 'Negotiable'}</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Condition Field (Applicable for Cars, Electronics, Tools) */}
+            {(category === 'cars' || category === 'electronics' || category === 'tools') && (
+              <div className="pt-2 border-t border-deumah-gray-200/50">
+                <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">
+                  ✨ {isAr ? 'حالة السلعة' : 'Item Condition'}
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {['new', 'like_new', 'good', 'fair'].map((cond) => {
+                    const labelMap: Record<string, { en: string; ar: string }> = {
+                      new: { en: 'New', ar: 'جديد' },
+                      like_new: { en: 'Like New', ar: 'شبه جديد' },
+                      good: { en: 'Good', ar: 'جيد' },
+                      fair: { en: 'Fair', ar: 'مقبول' }
+                    };
+                    return (
+                      <button
+                        key={cond}
+                        type="button"
+                        onClick={() => setItemCondition(cond)}
+                        className={`py-2 rounded-deumah-sm font-bold text-xs border text-center transition ${
+                          itemCondition === cond
+                            ? 'bg-deumah-green-700 text-white border-deumah-green-700 shadow-sm'
+                            : 'bg-white text-deumah-gray-700 border-deumah-gray-200 hover:border-deumah-gray-300'
+                        }`}
+                      >
+                        {isAr ? labelMap[cond].ar : labelMap[cond].en}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Section 3: Media File Uploader (Up to 10 photos + 1 optional video) */}
+          {/* Section 3: Media File Uploader */}
           <div className="space-y-4">
             <div>
               <h3 className="text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-2">
                 📸 {isAr ? 'معرض الصور والفيديو (الحد الأقصى ١٠ صور وفيديو واحد)' : 'Photo & Video Gallery (Max 10 photos & 1 video)'}
               </h3>
               
-              {/* Flex grids for photo & video drag-drop cards */}
               <div className="grid gap-4 sm:grid-cols-2">
-                
                 {/* Photo Dropzone */}
                 <div className="border-2 border-dashed border-deumah-gray-200 rounded-deumah p-6 text-center hover:border-deumah-green-700 transition relative cursor-pointer flex flex-col items-center justify-center">
                   <input
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept="image/*,.heic,.heif"
                     onChange={handlePhotoUpload}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
@@ -473,7 +756,7 @@ export default function PostAdPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <p className="text-xs font-bold text-deumah-navy-950">{isAr ? 'اضغط لرفع الصور' : 'Click to Upload Photos'}</p>
-                  <p className="text-[10px] text-deumah-gray-400 mt-1">{isAr ? 'تنسيق JPG, PNG حتى ١٠ صور' : 'Formats: JPG, PNG (Max 10)'}</p>
+                  <p className="text-[10px] text-deumah-gray-400 mt-1">{isAr ? 'تنسيق JPG, PNG, HEIC حتى ١٠ صور' : 'Formats: JPG, PNG, HEIC (Max 10)'}</p>
                 </div>
 
                 {/* Video Dropzone */}
@@ -493,45 +776,96 @@ export default function PostAdPage() {
                   </p>
                   <p className="text-[10px] text-deumah-gray-400 mt-1">{isAr ? 'اختياري، أقل من ١٠٠ ميجابايت' : 'Optional (Max 100MB)'}</p>
                 </div>
-
               </div>
             </div>
 
-            {/* Render uploaded items list grid */}
+            {/* Uploaded Gallery Grid with reordering and cover indicator */}
             {(photosList.length > 0 || videoFile) && (
               <div className="bg-deumah-gray-50 border border-deumah-gray-200 rounded-deumah p-4 space-y-3">
                 <p className="text-[11px] font-bold text-deumah-gray-400 uppercase tracking-wider">
-                  {isAr ? 'الملفات المرفوعة حالياً' : 'Currently Uploaded Files'}
+                  {isAr ? 'معرض المرفقات' : 'Attachments Gallery'}
                 </p>
                 
-                <div className="grid gap-2.5 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                   {/* Photo tiles */}
-                  {photosList.map(photo => (
-                    <div key={photo.id} className="relative aspect-square rounded border border-deumah-gray-200 overflow-hidden bg-white group shadow-sm">
-                      <img src={photo.url} alt="" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePhoto(photo.id)}
-                        className="absolute inset-0 bg-red-600/80 text-white flex items-center justify-center font-bold text-xs opacity-0 group-hover:opacity-100 transition duration-200"
+                  {photosList.map((photo, index) => {
+                    const isCover = index === 0;
+                    return (
+                      <div 
+                        key={photo.id} 
+                        className={`relative rounded border overflow-hidden bg-white shadow-sm flex flex-col group transition ${
+                          isCover ? 'border-deumah-green-700 ring-2 ring-deumah-green-700/20' : 'border-deumah-gray-200'
+                        }`}
                       >
-                        🗑️ {isAr ? 'حذف' : 'Delete'}
-                      </button>
-                    </div>
-                  ))}
+                        {/* Image view */}
+                        <div className="relative aspect-video bg-deumah-gray-100 flex-1">
+                          <img src={photo.url} alt="" className="w-full h-full object-cover" />
+                          {isCover && (
+                            <span className="absolute top-2 left-2 bg-deumah-green-700 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
+                              ★ {isAr ? 'الصورة الرئيسية' : 'Cover Image'}
+                            </span>
+                          )}
+                        </div>
 
-                  {/* Video tile */}
+                        {/* Controls Toolbar */}
+                        <div className="bg-white p-2 border-t border-deumah-gray-100 flex items-center justify-between gap-1 text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(photo.id)}
+                            className="text-red-600 font-bold hover:text-red-800 transition"
+                          >
+                            🗑️ {isAr ? 'حذف' : 'Delete'}
+                          </button>
+                          
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => movePhotoLeft(index)}
+                              className="px-1.5 py-0.5 border border-deumah-gray-200 rounded hover:bg-deumah-gray-50 disabled:opacity-30 disabled:pointer-events-none"
+                            >
+                              ◀
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === photosList.length - 1}
+                              onClick={() => movePhotoRight(index)}
+                              className="px-1.5 py-0.5 border border-deumah-gray-200 rounded hover:bg-deumah-gray-50 disabled:opacity-30 disabled:pointer-events-none"
+                            >
+                              ▶
+                            </button>
+                            {!isCover && (
+                              <button
+                                type="button"
+                                onClick={() => makePhotoCover(index)}
+                                className="px-2 py-0.5 border border-deumah-green-700 text-deumah-green-700 rounded font-bold hover:bg-deumah-green-50 transition"
+                              >
+                                {isAr ? 'تعيين كغلاف' : 'Make Cover'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Video Tile */}
                   {videoFile && (
-                    <div className="relative aspect-square rounded border border-deumah-gray-200 p-3 bg-deumah-navy-950 text-white flex flex-col justify-between shadow-sm">
-                      <div className="text-xl">🎥</div>
-                      <div className="truncate text-[10px] font-semibold text-white/90">{videoFile.name}</div>
-                      <div className="text-[9px] text-white/50">{videoFile.size}</div>
-                      <button
-                        type="button"
-                        onClick={handleRemoveVideo}
-                        className="absolute top-2 right-2 rtl:right-auto rtl:left-2 bg-red-600 text-white rounded p-1 text-[10px] font-bold"
-                      >
-                        ✕
-                      </button>
+                    <div className="relative aspect-video rounded border border-deumah-gray-200 p-3.5 bg-deumah-navy-950 text-white flex flex-col justify-between shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl">🎥</span>
+                        <button
+                          type="button"
+                          onClick={handleRemoveVideo}
+                          className="bg-red-600 hover:bg-red-700 text-white rounded-full size-5 flex items-center justify-center text-xs font-bold transition shadow"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div>
+                        <div className="truncate text-xs font-semibold text-white/90">{videoFile.name}</div>
+                        <div className="text-[10px] text-white/50">{videoFile.size}</div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -539,7 +873,7 @@ export default function PostAdPage() {
             )}
           </div>
 
-          {/* Section 4: Basic Info (Title, Description, Price, Location) */}
+          {/* Section 4: Basic Info */}
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
@@ -555,10 +889,26 @@ export default function PostAdPage() {
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-4">
+              {/* Currency Selector */}
+              <div>
+                <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
+                  {isAr ? 'العملة' : 'Currency'}
+                </label>
+                <select
+                  value={currency}
+                  onChange={e => setCurrency(e.target.value as 'USD' | 'YER')}
+                  className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-bold text-deumah-green-800"
+                >
+                  <option value="USD">USD ($)</option>
+                  <option value="YER">YER (ريال يمني)</option>
+                </select>
+              </div>
+
+              {/* Price */}
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
-                  {isAr ? 'السعر (بالدولار)' : 'Price (in USD)'} *
+                  {isAr ? 'السعر' : 'Price'} *
                 </label>
                 <input
                   type="number"
@@ -570,7 +920,7 @@ export default function PostAdPage() {
                 />
               </div>
 
-              {/* Dynamic Billing Period Selector (Only if Rent selected) */}
+              {/* Billing Period (Only if Rent selected) */}
               <div>
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
                   {isAr ? 'فترة الدفع' : 'Billing Period'}
@@ -594,17 +944,18 @@ export default function PostAdPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
+              {/* Governorates */}
               <div>
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
-                  {isAr ? 'المحافظة' : 'City'} *
+                  {isAr ? 'المحافظة' : 'Governorate'} *
                 </label>
                 <select
-                  value={city}
-                  onChange={e => setCity(e.target.value)}
+                  value={governorate}
+                  onChange={e => setGovernorate(e.target.value)}
                   className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-semibold"
                 >
-                  <option value="sanaa_city">{isAr ? 'أمانة العاصمة' : "Sana'a City"}</option>
-                  <option value="sanaa">{isAr ? 'صنعاء' : "Sana'a"}</option>
+                  <option value="sanaa_city">{isAr ? 'أمانة العاصمة / مدينة صنعاء' : "Sana'a City (Amanat Al Asimah)"}</option>
+                  <option value="sanaa">{isAr ? 'محافظة صنعاء' : 'Sana\'a Governorate'}</option>
                   <option value="aden">{isAr ? 'عدن' : 'Aden'}</option>
                   <option value="taiz">{isAr ? 'تعز' : 'Taiz'}</option>
                   <option value="ibb">{isAr ? 'إب' : 'Ibb'}</option>
@@ -612,13 +963,14 @@ export default function PostAdPage() {
                 </select>
               </div>
 
+              {/* Area */}
               <div>
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
                   {isAr ? 'المديرية / المنطقة' : 'District / Area'}
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Hadda, Al-Sabeen"
+                  placeholder="e.g. Hadda"
                   value={area}
                   onChange={e => setArea(e.target.value)}
                   className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-3 outline-none focus:border-deumah-green-600"
@@ -628,10 +980,10 @@ export default function PostAdPage() {
 
             <div>
               <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
-                {isAr ? 'وصف تفصيلي' : 'Detailed Description'} *
+                {isAr ? 'الوصف التفصيلي' : 'Detailed Description'} *
               </label>
               <textarea
-                placeholder={isAr ? 'اكتب تفاصيل الإعلان وشروطه ومميزاته هنا...' : 'Describe specifications, options, policies here...'}
+                placeholder={isAr ? 'اكتب شروط ومميزات وتفاصيل الإعلان هنا...' : 'Describe specifications, conditions, and highlights here...'}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={5}
@@ -654,7 +1006,7 @@ export default function PostAdPage() {
                   onChange={e => setContactCall(e.target.checked)}
                   className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                 />
-                <span>{isAr ? 'اتصال هاتفي مباشر' : 'Direct Phone Calls'}</span>
+                <span>{isAr ? 'اتصال مباشر' : 'Direct Call'}</span>
               </label>
 
               <label className="flex items-center gap-2 text-xs font-bold text-deumah-gray-700 cursor-pointer">
@@ -674,30 +1026,219 @@ export default function PostAdPage() {
                   onChange={e => setContactWhatsApp(e.target.checked)}
                   className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                 />
-                <span>{isAr ? 'رسائل واتساب' : 'WhatsApp Messages'}</span>
+                <span>{isAr ? 'رسائل واتساب' : 'WhatsApp Message'}</span>
               </label>
             </div>
           </div>
 
-          {/* Publish Action Button */}
-          <button
-            type="submit"
-            className="w-full bg-deumah-green-700 hover:bg-deumah-green-600 text-white font-bold py-3.5 rounded-deumah font-heading tracking-wide transition shadow-sm cursor-pointer"
-          >
-            {isAr ? 'انشر الإعلان الآن' : 'Publish Ad Now'}
-          </button>
+          {/* Terms & Agreement Checkbox */}
+          <div className="bg-deumah-gray-50 p-4 rounded-deumah border border-deumah-gray-200/50">
+            <label className="flex items-start gap-3 cursor-pointer text-xs font-semibold text-deumah-gray-700">
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={e => setAgreeTerms(e.target.checked)}
+                className="mt-0.5 rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
+              />
+              <span>
+                {isAr 
+                  ? 'أوافق على اتفاقية شروط الاستخدام، سياسة الخصوصية وقواعد النشر الخاصة بمنصة ديومة.' 
+                  : 'I agree to the Terms of Use, Privacy Policy, and listing rules of the Deumah platform.'}
+              </span>
+            </label>
+          </div>
+
+          {/* Action buttons (Preview & Publish) */}
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(true)}
+              className="flex-1 bg-white hover:bg-deumah-gray-50 text-deumah-navy-950 border border-deumah-gray-300 font-bold py-3.5 rounded-deumah font-heading tracking-wide transition shadow-sm cursor-pointer text-center"
+            >
+              👁️ {isAr ? 'معاينة الإعلان' : 'Preview Ad'}
+            </button>
+            <button
+              type="submit"
+              className="flex-1 bg-deumah-green-700 hover:bg-deumah-green-600 text-white font-bold py-3.5 rounded-deumah font-heading tracking-wide transition shadow-sm cursor-pointer text-center"
+            >
+              🚀 {isAr ? 'انشر الإعلان الآن' : 'Publish Ad Now'}
+            </button>
+          </div>
 
         </form>
 
       </main>
 
-      {/* Success Notification Toast Popup */}
-      {showToast && (
-        <div className="fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium">
-          <span className="size-5 rounded-full bg-deumah-green-700 text-white flex items-center justify-center font-bold text-xs">✓</span>
-          <span className="text-xs font-semibold">
-            {isAr ? 'تم نشر إعلانك بنجاح وجارٍ المراجعة!' : 'Your listing has been posted successfully and is pending approval!'}
-          </span>
+      {/* 1. AD PREVIEW MODAL */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white rounded-deumah max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative border border-deumah-gray-200 flex flex-col justify-between">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-deumah-gray-100 px-6 py-4 flex justify-between items-center z-10">
+              <h3 className="font-extrabold text-sm text-deumah-navy-950 uppercase tracking-wider">
+                👁️ {isAr ? 'معاينة الإعلان قبل النشر' : 'Preview Ad Before Publishing'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(false)}
+                className="text-deumah-gray-400 hover:text-deumah-gray-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body Preview Content */}
+            <div className="p-6 space-y-6 flex-1">
+              
+              {/* Photo cover preview */}
+              <div className="aspect-video w-full rounded border border-deumah-gray-200 overflow-hidden bg-deumah-gray-50 relative">
+                {photosList.length > 0 ? (
+                  <img src={photosList[0].url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-deumah-gray-400 text-xs font-semibold">
+                    <span>📸 {isAr ? 'لا يوجد صور مرفوعة حالياً' : 'No photos uploaded yet'}</span>
+                  </div>
+                )}
+                <span className="absolute top-3 left-3 bg-deumah-green-700 text-white text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
+                  {transactionType === 'rent' ? (isAr ? 'تأجير' : 'Rent') : (isAr ? 'بيع' : 'Sell')}
+                </span>
+              </div>
+
+              {/* Title & Price */}
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <h4 className="text-xl font-bold text-deumah-navy-950 font-heading">
+                    {title || (isAr ? 'عنوان تجريبي للإعلان' : 'Draft Ad Title')}
+                  </h4>
+                  <p className="text-xs font-medium text-deumah-gray-500 mt-1">
+                    📍 {isAr ? 'صنعاء • حدة' : 'Sana\'a • Hadda'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-extrabold text-deumah-green-700">
+                    {currency === 'USD' ? '$' : 'YER '}{price || '0'}
+                  </span>
+                  {transactionType === 'rent' && (
+                    <span className="text-[10px] text-deumah-gray-500 font-bold block mt-0.5">
+                      / {billingPeriod === 'day' ? (isAr ? 'يوم' : 'Day') : (isAr ? 'شهر' : 'Month')}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Dynamic Specs table based on selected category */}
+              <div className="bg-deumah-gray-50 p-4 rounded-deumah border border-deumah-gray-200/50">
+                <h5 className="text-[10px] font-extrabold text-deumah-gray-400 uppercase tracking-wider mb-2.5">
+                  📋 {isAr ? 'تفاصيل ومواصفات السلعة' : 'Specifications & Details'}
+                </h5>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-deumah-gray-500 block">{isAr ? 'الفئة' : 'Category'}</span>
+                    <strong className="text-deumah-navy-950 uppercase">{category}</strong>
+                  </div>
+                  <div>
+                    <span className="text-deumah-gray-500 block">{isAr ? 'الحالة' : 'Condition'}</span>
+                    <strong className="text-deumah-navy-950 uppercase">{itemCondition}</strong>
+                  </div>
+                  
+                  {category === 'cars' && (
+                    <>
+                      <div>
+                        <span className="text-deumah-gray-500 block">{isAr ? 'الماركة' : 'Brand'}</span>
+                        <strong className="text-deumah-navy-950">{carBrand || '-'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-deumah-gray-500 block">{isAr ? 'الموديل' : 'Model'}</span>
+                        <strong className="text-deumah-navy-950">{carModel || '-'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-deumah-gray-500 block">{isAr ? 'سنة الصنع' : 'Year'}</span>
+                        <strong className="text-deumah-navy-950">{carYear || '-'}</strong>
+                      </div>
+                    </>
+                  )}
+                  
+                  {category === 'properties' && (
+                    <>
+                      <div>
+                        <span className="text-deumah-gray-500 block">{isAr ? 'النوع' : 'Property Type'}</span>
+                        <strong className="text-deumah-navy-950">{propType || '-'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-deumah-gray-500 block">{isAr ? 'مفروش' : 'Furnished'}</span>
+                        <strong className="text-deumah-navy-950">{propFurnished || '-'}</strong>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <h5 className="text-[10px] font-extrabold text-deumah-gray-400 uppercase tracking-wider">
+                  📝 {isAr ? 'الوصف' : 'Description'}
+                </h5>
+                <p className="text-xs text-deumah-gray-700 leading-relaxed whitespace-pre-line">
+                  {description || (isAr ? 'لا يوجد وصف حالياً...' : 'No description provided...')}
+                </p>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-deumah-gray-50 border-t border-deumah-gray-100 p-4 text-right">
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(false)}
+                className="px-5 py-2.5 bg-deumah-navy-950 hover:bg-deumah-navy-900 text-white font-bold text-xs rounded-deumah transition shadow-sm"
+              >
+                {isAr ? 'رجوع لتعديل الإعلان' : 'Back to Editing'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. SUCCESS PUBLISHED DIALOG & MODERATION STATUS */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-deumah max-w-md w-full p-6 text-center shadow-2xl relative border border-deumah-gray-200 space-y-4">
+            
+            <div className="mx-auto w-12 h-12 bg-deumah-green-50 rounded-full flex items-center justify-center text-deumah-green-700 text-xl font-bold">
+              ✓
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-deumah-navy-950 font-heading">
+                {isAr ? 'تم إرسال إعلانك للمراجعة!' : 'Ad Submitted for Review!'}
+              </h3>
+              <p className="text-xs text-deumah-gray-500">
+                {isAr 
+                  ? 'تم تسجيل إعلانك بنجاح في قاعدة البيانات وهو قيد المراجعة حالياً من قبل الإشراف.' 
+                  : 'Your ad has been successfully registered and is undergoing safety audit checks.'}
+              </p>
+            </div>
+
+            {/* Moderation Status Widget card */}
+            <div className="bg-deumah-gray-50 border border-deumah-gray-200/60 rounded-deumah p-3 flex justify-between items-center text-xs font-semibold">
+              <span className="text-deumah-gray-500">{isAr ? 'حالة المراجعة' : 'Moderation Status'}</span>
+              <span className="bg-yellow-50 text-yellow-700 border border-yellow-200 px-3 py-0.5 rounded-full font-bold uppercase tracking-wider text-[10px]">
+                ⏳ {isAr ? 'قيد المراجعة' : 'Pending Review'}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowSuccessModal(false);
+                router.push('/listings');
+              }}
+              className="w-full bg-deumah-green-700 hover:bg-deumah-green-600 text-white font-bold py-2.5 rounded-deumah text-xs transition shadow-sm"
+            >
+              {isAr ? 'انتقل إلى صفحة الإعلانات' : 'Go to Listings Directory'}
+            </button>
+
+          </div>
         </div>
       )}
 

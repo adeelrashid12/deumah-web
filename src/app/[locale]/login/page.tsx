@@ -12,7 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   // Form State
-  const [email, setEmail] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -27,8 +27,8 @@ export default function LoginPage() {
     setErrorMsg('');
 
     // Basic Validation
-    if (!email.trim() || !password.trim()) {
-      setErrorMsg(isAr ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور!' : 'Please enter your email and password!');
+    if (!loginIdentifier.trim() || !password.trim()) {
+      setErrorMsg(isAr ? 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف وكلمة المرور!' : 'Please enter your email or phone number and password!');
       return;
     }
 
@@ -79,16 +79,16 @@ export default function LoginPage() {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             
-            {/* Email Field */}
+            {/* Identifier Field */}
             <div>
               <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
-                {isAr ? 'البريد الإلكتروني' : 'Email Address'}
+                {isAr ? 'البريد الإلكتروني أو رقم الهاتف' : 'Email Address or Phone Number'}
               </label>
               <input
-                type="email"
-                placeholder={isAr ? 'name@example.com' : 'name@example.com'}
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                type="text"
+                placeholder={isAr ? 'name@example.com أو 77xxxxxxx' : 'name@example.com or 77xxxxxxx'}
+                value={loginIdentifier}
+                onChange={e => setLoginIdentifier(e.target.value)}
                 disabled={loading}
                 className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                 required

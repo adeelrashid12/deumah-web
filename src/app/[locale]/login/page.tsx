@@ -5,6 +5,7 @@ import { useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { Link, useRouter } from '@/i18n/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const locale = useLocale();
@@ -22,7 +23,7 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -39,15 +40,34 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // Mock Authentication Delay
-    setTimeout(() => {
+    try {
+      const isEmail = loginIdentifier.includes('@');
+      let credentials: any = { password };
+
+      if (isEmail) {
+        credentials.email = loginIdentifier.trim().toLowerCase();
+      } else {
+        // Handle basic phone number sanitization if needed
+        credentials.phone = loginIdentifier.trim();
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword(credentials);
+
+      if (error) {
+        throw error;
+      }
+
       setLoading(false);
       setShowSuccessToast(true);
       setTimeout(() => {
         setShowSuccessToast(false);
-        router.push('/');
+        router.push('/dashboard');
       }, 2000);
-    }, 1500);
+
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message || (isAr ? 'خطأ في البريد الإلكتروني/رقم الهاتف أو كلمة المرور!' : 'Invalid email/phone or password!'));
+    }
   };
 
   return (

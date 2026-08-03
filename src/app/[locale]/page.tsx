@@ -1,5 +1,4 @@
-import {DeumahHome} from '@/components/deumah/deumah-home';
-import {Footer} from '@/components/layout/Footer';
+import { DeumahHome } from '@/components/deumah/deumah-home';
 import { Suspense } from 'react';
 
 export default function HomePage() {
@@ -10,7 +9,6 @@ export default function HomePage() {
       </div>
     }>
       <DeumahHome />
-      <Footer />
     </Suspense>
   );
 }

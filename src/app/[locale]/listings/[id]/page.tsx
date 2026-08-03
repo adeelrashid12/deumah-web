@@ -2,15 +2,74 @@ import { getBaseUrl } from '@/utils/seo';
 import { LISTINGS_DB } from '@/data/listings';
 import { ListingDetailsClient } from '@/components/deumah/listing-details-client';
 import { notFound } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
 }
 
+// Fetch listing details from database OR fallback to local mock
+async function getListing(id: string) {
+  if (LISTINGS_DB[id]) {
+    return LISTINGS_DB[id];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('listings')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (data) {
+      return {
+        id: data.id,
+        owner_id: data.owner_id,
+        ownerId: data.owner_id,
+        category: data.category,
+        images: data.images && data.images.length ? data.images : ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80'],
+        videoUrl: data.video_url || null,
+        titleEn: data.title_en,
+        titleAr: data.title_ar,
+        price: Number(data.price),
+        currency: data.currency || 'USD',
+        periodEn: data.type === 'rent' ? 'Day' : '',
+        periodAr: data.type === 'rent' ? 'يوم' : '',
+        type: data.type,
+        locationEn: "Sana'a",
+        locationAr: data.governorate === 'sanaa_city' ? 'أمانة العاصمة' : 'صنعاء',
+        descriptionEn: data.description_en || '',
+        descriptionAr: data.description_ar || '',
+        specifications: data.specifications || {},
+        specs: data.specifications && typeof data.specifications === 'object' && !Array.isArray(data.specifications)
+          ? Object.entries(data.specifications).map(([k, v]) => ({
+              labelEn: k,
+              labelAr: k,
+              valueEn: String(v),
+              valueAr: String(v)
+            }))
+          : (Array.isArray(data.specifications) ? data.specifications : []),
+        condition: data.condition || null,
+        owner: {
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          nameEn: 'Verified Seller',
+          nameAr: 'بائع موثق',
+          memberSinceEn: '2024',
+          memberSinceAr: '٢٠٢٤',
+          responseRate: '98%'
+        }
+      };
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  return null;
+}
+
 // Next.js dynamic metadata generator (Server-Side rendered)
 export async function generateMetadata({ params }: PageProps) {
   const { locale, id } = await params;
-  const item = LISTINGS_DB[id];
+  const item = await getListing(id);
   if (!item) return {};
 
   const isAr = locale === 'ar';
@@ -37,7 +96,7 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function ListingPage({ params }: PageProps) {
   const { locale, id } = await params;
-  const item = LISTINGS_DB[id];
+  const item = await getListing(id);
 
   if (!item) {
     notFound();
@@ -56,7 +115,7 @@ export default async function ListingPage({ params }: PageProps) {
     "offers": {
       "@type": "Offer",
       "price": item.price,
-      "priceCurrency": "USD",
+      "priceCurrency": (item as any).currency || "USD",
       "availability": "https://schema.org/InStock",
       "url": `${baseUrl}/${locale}/listings/${id}`
     }
@@ -69,7 +128,7 @@ export default async function ListingPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ListingDetailsClient item={item} locale={locale} />
+      <ListingDetailsClient item={item as any} locale={locale} />
     </>
   );
 }

@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { ListingCard } from '@/components/deumah/listing-card';
+import { supabase } from '@/lib/supabase';
 
 // List of all 22 Yemen cities (English & Arabic)
 const YEMEN_CITIES = [
@@ -33,209 +34,8 @@ const YEMEN_CITIES = [
   { id: 'socotra', en: "Socotra", ar: "سقطرى" }
 ];
 
-// Mock Listings Data matching Yemen cities
-const ALL_MOCK_LISTINGS = [
-  {
-    id: '1',
-    category: 'cars',
-    image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Toyota Land Cruiser 2021',
-    titleAr: 'تويوتا لاند كروزر 2021',
-    price: 85,
-    periodEn: 'Day',
-    periodAr: 'يوم',
-    type: 'rent',
-    locationEn: "Sana'a • Hadda",
-    locationAr: 'صنعاء • حدة',
-    cityId: 'sanaa',
-    verified: true,
-    newToday: false,
-    negotiable: true,
-    deliveryAvailable: false,
-    freeDelivery: true,
-    createdDaysAgo: 2,
-  },
-  {
-    id: '2',
-    category: 'properties',
-    image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Villa in Al-Sabeen Street',
-    titleAr: 'فيلا في شارع السبعين',
-    price: 950,
-    periodEn: 'Month',
-    periodAr: 'شهر',
-    type: 'rent',
-    locationEn: "Sana'a • Al-Sabeen",
-    locationAr: 'صنعاء • السبعين',
-    cityId: 'sanaa',
-    verified: true,
-    newToday: false,
-    negotiable: false,
-    deliveryAvailable: true,
-    freeDelivery: false,
-    createdDaysAgo: 5,
-  },
-  {
-    id: '3',
-    category: 'electronics',
-    image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Canon 80D Camera',
-    titleAr: 'كاميرا Canon 80D',
-    price: 450,
-    periodEn: '',
-    periodAr: '',
-    type: 'sell',
-    locationEn: "Sana'a • Al-Tahrir",
-    locationAr: 'صنعاء • التحرير',
-    cityId: 'sanaa',
-    verified: false,
-    newToday: true,
-    negotiable: false,
-    deliveryAvailable: false,
-    freeDelivery: false,
-    createdDaysAgo: 0,
-  },
-  {
-    id: '4',
-    category: 'hobbies',
-    image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Mountain Bicycle',
-    titleAr: 'دراجة هوائية جبلية',
-    price: 15,
-    periodEn: 'Day',
-    periodAr: 'يوم',
-    type: 'rent',
-    locationEn: "Sana'a • Shu'aub",
-    locationAr: 'صنعاء • شعوب',
-    cityId: 'sanaa',
-    verified: false,
-    newToday: false,
-    negotiable: true,
-    deliveryAvailable: false,
-    freeDelivery: false,
-    createdDaysAgo: 12,
-  },
-  {
-    id: '5',
-    category: 'wedding_halls',
-    image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Royal Palace Wedding Hall',
-    titleAr: 'قاعة القصر الملكية للأفراح',
-    price: 1200,
-    periodEn: 'Day',
-    periodAr: 'يوم',
-    type: 'rent',
-    locationEn: "Sana'a City • Al-Wahdah",
-    locationAr: 'أمانة العاصمة • الوحدة',
-    cityId: 'sanaa_city',
-    verified: true,
-    newToday: true,
-    negotiable: false,
-    deliveryAvailable: false,
-    freeDelivery: true,
-    createdDaysAgo: 0,
-  },
-  {
-    id: '6',
-    category: 'chalets',
-    image: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Green Hills Chalet',
-    titleAr: 'شاليه التلال الخضراء',
-    price: 180,
-    periodEn: 'Day',
-    periodAr: 'يوم',
-    type: 'rent',
-    locationEn: 'Aden • Khormaksar',
-    locationAr: 'عدن • خور مكسر',
-    cityId: 'aden',
-    verified: true,
-    newToday: false,
-    negotiable: false,
-    deliveryAvailable: true,
-    freeDelivery: false,
-    createdDaysAgo: 8,
-  },
-  {
-    id: '7',
-    category: 'electronics',
-    image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'iPhone 14 Pro Max',
-    titleAr: 'آيفون 14 برو ماكس',
-    price: 800,
-    periodEn: '',
-    periodAr: '',
-    type: 'sell',
-    locationEn: 'Aden • Crater',
-    locationAr: 'عدن • كريتر',
-    cityId: 'aden',
-    verified: false,
-    newToday: true,
-    negotiable: false,
-    deliveryAvailable: false,
-    freeDelivery: false,
-    createdDaysAgo: 0,
-  },
-  {
-    id: '8',
-    category: 'furniture',
-    image: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Wooden Dining Table Set',
-    titleAr: 'طاولة طعام خشبية متكاملة',
-    price: 120,
-    periodEn: '',
-    periodAr: '',
-    type: 'sell',
-    locationEn: 'Taiz • Al-Qahirah',
-    locationAr: 'تعز • القاهرة',
-    cityId: 'taiz',
-    verified: false,
-    newToday: false,
-    negotiable: true,
-    deliveryAvailable: false,
-    freeDelivery: false,
-    createdDaysAgo: 10,
-  },
-  {
-    id: '9',
-    category: 'properties',
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Modern Studio Apartment',
-    titleAr: 'شقة استوديو حديثة',
-    price: 300,
-    periodEn: 'Month',
-    periodAr: 'شهر',
-    type: 'rent',
-    locationEn: 'Ibb • Al-Dhihar',
-    locationAr: 'إب • الظهار',
-    cityId: 'ibb',
-    verified: true,
-    newToday: false,
-    negotiable: false,
-    deliveryAvailable: true,
-    freeDelivery: false,
-    createdDaysAgo: 14,
-  },
-  {
-    id: '10',
-    category: 'tools',
-    image: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=600&auto=format&fit=crop&q=80',
-    titleEn: 'Heavy Duty Power Drill',
-    titleAr: 'دريل كهربائي عالي القوة',
-    price: 25,
-    periodEn: 'Day',
-    periodAr: 'يوم',
-    type: 'rent',
-    locationEn: 'Hadhramaut • Mukalla',
-    locationAr: 'حضرموت • المكلا',
-    cityId: 'hadhramaut',
-    verified: false,
-    newToday: false,
-    negotiable: false,
-    deliveryAvailable: false,
-    freeDelivery: true,
-    createdDaysAgo: 11,
-  }
-];
+// 100% Real Supabase Database Data - No Dummy Listings
+const ALL_MOCK_LISTINGS: any[] = [];
 
 import { Suspense } from 'react';
 
@@ -249,11 +49,15 @@ function SearchResultsPage() {
 
   const searchParams = useSearchParams();
 
-  // Filters State
-  const [searchQuery, setSearchQuery] = useState('');
+  const categoryParam = searchParams.get('category') || '';
+  const queryParam = searchParams.get('query') || '';
+  const cityParam = searchParams.get('city') || '';
+
+  // Filters State - Initialized synchronously from URL searchParams
+  const [searchQuery, setSearchQuery] = useState(queryParam);
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(categoryParam ? [categoryParam] : []);
+  const [selectedCities, setSelectedCities] = useState<string[]>(cityParam ? [cityParam] : []);
   
   // New Checklist Filters
   const [onlyVerified, setOnlyVerified] = useState(false);
@@ -269,13 +73,13 @@ function SearchResultsPage() {
 
   // Sync state with URL search parameters on load/change
   useEffect(() => {
-    const queryParam = searchParams.get('query') || '';
-    const categoryParam = searchParams.get('category') || '';
-    const cityParam = searchParams.get('city') || '';
+    const q = searchParams.get('query') || '';
+    const c = searchParams.get('category') || '';
+    const ci = searchParams.get('city') || '';
 
-    setSearchQuery(queryParam);
-    setSelectedCategories(categoryParam ? [categoryParam] : []);
-    setSelectedCities(cityParam ? [cityParam] : []);
+    setSearchQuery(q);
+    setSelectedCategories(c ? [c] : []);
+    setSelectedCities(ci ? [ci] : []);
   }, [searchParams]);
 
   // Filter Categories list
@@ -325,25 +129,110 @@ function SearchResultsPage() {
     setSortBy('newest');
   };
 
+  const [dbListings, setDbListings] = useState<any[]>([]);
+  const [isLoadingDb, setIsLoadingDb] = useState(true);
+
+  useEffect(() => {
+    async function loadDb() {
+      setIsLoadingDb(true);
+      try {
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (data) {
+          const mapped = data.map(item => ({
+            id: item.id,
+            category: item.category || 'cars',
+            image: item.images?.[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
+            titleEn: item.title_en,
+            titleAr: item.title_ar,
+            price: Number(item.price),
+            periodEn: item.type === 'rent' ? 'Day' : '',
+            periodAr: item.type === 'rent' ? 'يوم' : '',
+            type: item.type,
+            locationEn: "Sana'a",
+            locationAr: item.governorate === 'sanaa_city' ? 'أمانة العاصمة' : 'صنعاء',
+            cityId: item.governorate,
+            governorate: item.governorate,
+            descriptionEn: item.description_en || '',
+            descriptionAr: item.description_ar || '',
+            status: item.status,
+            verified: true,
+            newToday: true,
+            negotiable: false,
+            deliveryAvailable: false,
+            freeDelivery: false,
+            createdDaysAgo: 0,
+          }));
+          setDbListings(mapped);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoadingDb(false);
+      }
+    }
+    loadDb();
+  }, []);
+
+  const combinedListings = useMemo(() => {
+    // 100% Real Live Supabase Database Data ONLY - No Mock/Dummy listings!
+    return dbListings;
+  }, [dbListings]);
+
   // Computed and filtered listings
   const filteredListings = useMemo(() => {
-    return ALL_MOCK_LISTINGS.filter(item => {
-      // 1. Text Search Query Match
+    return combinedListings.filter(item => {
+      // 1. Text Search Query Match (Title, Category, Location, Description)
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesEn = item.titleEn.toLowerCase().includes(query);
-        const matchesAr = item.titleAr.includes(query);
-        if (!matchesEn && !matchesAr) return false;
+        const query = searchQuery.trim().toLowerCase();
+        const matchesEn = item.titleEn?.toLowerCase().includes(query);
+        const matchesAr = item.titleAr?.includes(query);
+        const matchesCat = item.category?.toLowerCase().includes(query);
+        const matchesLocEn = item.locationEn?.toLowerCase().includes(query);
+        const matchesLocAr = item.locationAr?.includes(query);
+        const matchesDescEn = item.descriptionEn?.toLowerCase().includes(query);
+        const matchesDescAr = item.descriptionAr?.includes(query);
+
+        if (!matchesEn && !matchesAr && !matchesCat && !matchesLocEn && !matchesLocAr && !matchesDescEn && !matchesDescAr) {
+          return false;
+        }
       }
 
       // 2. Transaction Type Match
       if (selectedType && item.type !== selectedType) return false;
 
-      // 3. Category Match
-      if (selectedCategories.length > 0 && !selectedCategories.includes(item.category)) return false;
+      // 3. Category Match (Ultra-flexible & case-insensitive matching)
+      if (selectedCategories.length > 0) {
+        const itemCatNorm = (item.category || '').toLowerCase().trim();
+        const itemTitleNorm = ((item.titleEn || '') + ' ' + (item.titleAr || '')).toLowerCase();
+        
+        const matchesCat = selectedCategories.some(selected => {
+          const selNorm = selected.toLowerCase().trim();
+          if (!itemCatNorm) return true;
+          if (itemCatNorm === selNorm) return true;
+          if (itemCatNorm.includes(selNorm) || selNorm.includes(itemCatNorm)) return true;
+          if ((selNorm === 'furniture_home' || selNorm === 'furniture') && (itemCatNorm.includes('furniture') || itemCatNorm.includes('home'))) return true;
+          if ((selNorm === 'cars' || selNorm === 'vehicles' || selNorm === 'car') && 
+              (itemCatNorm.includes('car') || itemCatNorm.includes('vehicle') || itemCatNorm.includes('auto') || itemTitleNorm.includes('civic') || itemTitleNorm.includes('honda') || itemTitleNorm.includes('car') || itemTitleNorm.includes('toyota') || itemTitleNorm.includes('nissan'))) return true;
+          return false;
+        });
+        if (!matchesCat) return false;
+      }
 
-      // 4. City Location Match
-      if (selectedCities.length > 0 && !selectedCities.includes(item.cityId)) return false;
+      // 4. City Location Match (Smart city matching)
+      if (selectedCities.length > 0) {
+        const matchesCity = selectedCities.some(city => {
+          const itemCity = (item.cityId || item.governorate || '').toLowerCase();
+          const selCity = city.toLowerCase();
+          if (itemCity === selCity) return true;
+          if ((selCity === 'sanaa_city' || selCity === 'sanaa') && (itemCity === 'sanaa' || itemCity === 'sanaa_city' || itemCity === '' || !itemCity)) return true;
+          return false;
+        });
+        if (!matchesCity) return false;
+      }
 
       // 5. Verification Status Match
       if (onlyVerified && !item.verified) return false;
@@ -370,7 +259,7 @@ function SearchResultsPage() {
       if (sortBy === 'priceDesc') return b.price - a.price;
       return a.createdDaysAgo - b.createdDaysAgo;
     });
-  }, [searchQuery, selectedType, selectedCategories, selectedCities, onlyVerified, newToday, negotiable, deliveryAvailable, freeDelivery, minPrice, maxPrice, sortBy]);
+  }, [combinedListings, dbListings, searchQuery, selectedType, selectedCategories, selectedCities, onlyVerified, newToday, negotiable, deliveryAvailable, freeDelivery, minPrice, maxPrice, sortBy]);
 
   return (
     <div className="min-h-screen bg-deumah-gray-50 text-deumah-navy-950 flex flex-col">
@@ -658,7 +547,14 @@ function SearchResultsPage() {
 
           {/* Results Grid */}
           <div className="flex-1">
-            {filteredListings.length > 0 ? (
+            {isLoadingDb ? (
+              <div className="text-center py-20 bg-white rounded-deumah border border-deumah-gray-200 p-8 shadow-sm flex flex-col items-center justify-center space-y-3">
+                <div className="size-9 border-4 border-deumah-green-700 border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs font-bold text-deumah-gray-600">
+                  {isAr ? 'جاري تحميل الإعلانات من قاعدة البيانات...' : 'Loading listings from database...'}
+                </p>
+              </div>
+            ) : filteredListings.length > 0 ? (
               <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredListings.map(item => {
                   const toArabicNumerals = (num: number | string): string => {

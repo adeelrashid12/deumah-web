@@ -18,12 +18,14 @@
     "notifications": "Notifications"
   },
   "Hero": {
+    "title": "Rent. Buy. Sell. All in One Place.",
     "titleLine1": "Rent. Buy. Sell.",
     "titleLine2": "All in One Place.",
     "subtitle": "Everything you need, anytime, anywhere.",
     "trusted": "Trusted by thousands of users"
   },
   "Search": {
+    "allCategories": "All Categories",
     "category": "All Categories",
     "placeholder": "What are you looking for?",
     "location": "Sana'a",
@@ -31,13 +33,18 @@
   },
   "Actions": {
     "rent": "Rent",
+    "rentTitle": "Rent",
     "rentDescription": "Find places and items to rent",
     "buy": "Buy",
+    "buyTitle": "Buy",
     "buyDescription": "Buy new and used items",
     "sell": "Sell",
+    "sellTitle": "Sell",
     "sellDescription": "Sell anything you own",
     "delivery": "Delivery",
-    "deliveryDescription": "Fast and safe delivery"
+    "deliveryDescription": "Fast and safe delivery",
+    "shippingTitle": "International Shipping",
+    "shippingDescription": "Trusted global freight & shipping partners"
   },
   "Categories": {
     "title": "Browse Categories",

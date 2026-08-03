@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { Link } from '@/i18n/navigation';
+import { supabase } from '@/lib/supabase';
 
 import { ListingItem } from '@/data/listings';
 
@@ -30,6 +31,15 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
   // Message Form state
   const [messageText, setMessageText] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUser(user);
+    });
+  }, []);
+
+  const isOwner = currentUser && (currentUser.id === (item as any).ownerId || currentUser.id === (item as any).owner_id);
 
   // Booking Calendar Scheduler state (for Rent items)
   const [startDate, setStartDate] = useState('');
@@ -48,9 +58,22 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
     return { daysCount, totalCost };
   }, [startDate, endDate, item.price]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim()) return;
+
+    try {
+      if (currentUser) {
+        await supabase.from('messages').insert({
+          listing_id: item.id,
+          sender_id: currentUser.id,
+          receiver_id: (item as any).owner_id || (item as any).ownerId || null,
+          message_text: messageText
+        });
+      }
+    } catch (err) {
+      console.error('Message error:', err);
+    }
     
     setShowToast(true);
     setMessageText('');
@@ -205,23 +228,25 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
             </div>
 
             {/* Specifications Details */}
-            <div className="bg-white p-6 rounded-deumah border border-deumah-gray-200 shadow-sm">
-              <h2 className="text-lg font-bold text-deumah-navy-950 mb-4 pb-2 border-b border-deumah-gray-100">
-                ⚙️ {t('specs')}
-              </h2>
-              <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
-                {item.specs.map((spec, i) => (
-                  <div key={i} className="p-3 bg-deumah-gray-50 rounded-deumah-sm border border-deumah-gray-100">
-                    <div className="text-xs text-deumah-gray-500 font-bold uppercase mb-1">
-                      {isAr ? spec.labelAr : spec.labelEn}
+            {item.specs && Array.isArray(item.specs) && item.specs.length > 0 && (
+              <div className="bg-white p-6 rounded-deumah border border-deumah-gray-200 shadow-sm">
+                <h2 className="text-lg font-bold text-deumah-navy-950 mb-4 pb-2 border-b border-deumah-gray-100">
+                  ⚙️ {t('specs')}
+                </h2>
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+                  {item.specs.map((spec, i) => (
+                    <div key={i} className="p-3 bg-deumah-gray-50 rounded-deumah-sm border border-deumah-gray-100">
+                      <div className="text-xs text-deumah-gray-500 font-bold uppercase mb-1">
+                        {isAr ? spec.labelAr : spec.labelEn}
+                      </div>
+                      <div className="text-sm font-bold text-deumah-navy-950">
+                        {isAr ? spec.valueAr : spec.valueEn}
+                      </div>
                     </div>
-                    <div className="text-sm font-bold text-deumah-navy-950">
-                      {isAr ? spec.valueAr : spec.valueEn}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Map Placeholder Location */}
             <div className="bg-white p-6 rounded-deumah border border-deumah-gray-200 shadow-sm">
@@ -333,13 +358,19 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
               {/* Profile details */}
               <div className="flex items-center gap-3">
-                <img src={item.owner.avatar} alt="" className="size-12 rounded-full object-cover border border-deumah-gray-200" />
+                <img 
+                  src={item.owner?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'} 
+                  alt="" 
+                  className="size-12 rounded-full object-cover border border-deumah-gray-200" 
+                />
                 <div>
                   <div className="font-bold text-deumah-navy-950 hover:text-deumah-green-700 transition">
-                    {isAr ? item.owner.nameAr : item.owner.nameEn}
+                    {isOwner
+                      ? (currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || (isAr ? 'أنت (صاحب الإعلان)' : 'You (Owner)'))
+                      : (isAr ? (item.owner?.nameAr || 'بائع موثق') : (item.owner?.nameEn || 'Verified Seller'))}
                   </div>
                   <div className="text-xs text-deumah-gray-400 font-medium">
-                    {t('membersince')}: {isAr ? item.owner.memberSinceAr : item.owner.memberSinceEn}
+                    {t('membersince')}: {isAr ? (item.owner?.memberSinceAr || '٢٠٢٤') : (item.owner?.memberSinceEn || '2024')}
                   </div>
                 </div>
               </div>
@@ -348,7 +379,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
               <div className="grid grid-cols-2 gap-2 text-center border-y border-deumah-gray-100 py-2.5">
                 <div>
                   <div className="text-xs text-deumah-gray-400 font-bold uppercase">{t('responserate')}</div>
-                  <div className="text-sm font-bold text-deumah-green-700 mt-0.5">{item.owner.responseRate}</div>
+                  <div className="text-sm font-bold text-deumah-green-700 mt-0.5">{item.owner?.responseRate || '98%'}</div>
                 </div>
                 <div>
                   <div className="text-xs text-deumah-gray-400 font-bold uppercase">{isAr ? 'التحقق' : 'Status'}</div>
@@ -356,23 +387,42 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                 </div>
               </div>
 
-              {/* Message form */}
-              <form onSubmit={handleSendMessage} className="space-y-3">
-                <textarea
-                  value={messageText}
-                  onChange={e => setMessageText(e.target.value)}
-                  placeholder={t('messagePlaceholder')}
-                  rows={3}
-                  className="w-full text-xs border border-deumah-gray-200 rounded-deumah-sm p-3 outline-none focus:border-deumah-green-600 bg-transparent transition resize-none"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="w-full bg-deumah-navy-950 text-white hover:bg-deumah-navy-900 py-2.5 rounded-deumah-sm font-bold text-xs transition"
-                >
-                  ✉️ {t('sendMessage')}
-                </button>
-              </form>
+              {/* Message form or Owner Management Box */}
+              {isOwner ? (
+                <div className="bg-deumah-navy-950 text-white p-4 rounded-deumah-sm space-y-2.5 border border-white/10 shadow-xs">
+                  <div className="flex items-center gap-2 text-[11px] font-extrabold text-deumah-gold-500 uppercase tracking-wider">
+                    <span>⭐ {isAr ? 'إعلانك الخاص' : 'YOUR OWN LISTING'}</span>
+                  </div>
+                  <p className="text-[11px] text-white/80 leading-relaxed font-medium">
+                    {isAr 
+                      ? 'أنت صاحب هذا الإعلان. يمكنك إدارة حالة الإعلان، إيقافه، تعديله، أو رؤية استفسارات المشترين من لوحة التحكم.'
+                      : 'You are the owner of this ad listing. Manage status, edit info, pause/delete, or view buyer messages in your dashboard.'}
+                  </p>
+                  <Link 
+                    href="/dashboard"
+                    className="w-full bg-deumah-green-700 hover:bg-deumah-green-600 text-white text-center py-2 rounded-deumah-sm font-bold text-xs transition block shadow-xs"
+                  >
+                    ⚙️ {isAr ? 'الانتقال للوحة التحكم وإدارة الإعلان' : 'Manage Ad in My Dashboard'}
+                  </Link>
+                </div>
+              ) : (
+                <form onSubmit={handleSendMessage} className="space-y-3">
+                  <textarea
+                    value={messageText}
+                    onChange={e => setMessageText(e.target.value)}
+                    placeholder={t('messagePlaceholder')}
+                    rows={3}
+                    className="w-full text-xs border border-deumah-gray-200 rounded-deumah-sm p-3 outline-none focus:border-deumah-green-600 bg-transparent transition resize-none"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="w-full bg-deumah-navy-950 text-white hover:bg-deumah-navy-900 py-2.5 rounded-deumah-sm font-bold text-xs transition cursor-pointer"
+                  >
+                    ✉️ {t('sendMessage')}
+                  </button>
+                </form>
+              )}
             </div>
 
           </div>

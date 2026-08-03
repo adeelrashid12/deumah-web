@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { Link } from '@/i18n/navigation';
+import { supabase } from '@/lib/supabase';
 
 interface ListingItem {
   id: string;
@@ -13,7 +14,7 @@ interface ListingItem {
   price: string;
   category: string;
   type: 'sale' | 'rent';
-  status: 'active' | 'paused' | 'sold' | 'rented';
+  status: 'active' | 'paused' | 'sold' | 'rented' | 'approved' | 'pending' | 'rejected';
   views: number;
   favorites: number;
 }
@@ -26,16 +27,12 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'saved' | 'profile' | 'settings'>('listings');
 
   // Listings State
-  const [listingsList, setListingsList] = useState<ListingItem[]>([
-    { id: '1', titleEn: 'Toyota Land Cruiser 2021', titleAr: 'تويوتا لاند كروزر 2021', price: '$85/Day', category: 'Cars', type: 'rent', status: 'active', views: 342, favorites: 28 },
-    { id: '2', titleEn: 'Villa in Al-Sabeen Street', titleAr: 'فيلا في شارع السبعين', price: '$950/Month', category: 'Properties', type: 'rent', status: 'paused', views: 189, favorites: 14 },
-    { id: '3', titleEn: 'Canon 80D Camera', titleAr: 'كاميرا Canon 80D', price: '$450', category: 'Electronics', type: 'sale', status: 'active', views: 567, favorites: 42 }
-  ]);
+  const [listingsList, setListingsList] = useState<ListingItem[]>([]);
 
   // Profile Details State
-  const [fullName, setFullName] = useState(isAr ? 'أحمد علي' : 'Ahmed Ali');
-  const [phone, setPhone] = useState('771234567');
-  const [email, setEmail] = useState('ahmed@example.com');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [governorate, setGovernorate] = useState('sanaa_city');
 
   // App settings state
@@ -52,69 +49,259 @@ export default function DashboardPage() {
     setTimeout(() => setShowToast(false), 2500);
   };
 
-  // Actions handlers
-  const handleTogglePause = (id: string) => {
-    setListingsList(prev => prev.map(item => {
-      if (item.id === id) {
-        const nextStatus = item.status === 'paused' ? 'active' : 'paused';
-        triggerToast(
-          isAr 
-            ? (nextStatus === 'active' ? 'تم استئناف الإعلان بنجاح!' : 'تم إيقاف الإعلان مؤقتاً!') 
-            : (nextStatus === 'active' ? 'Listing resumed successfully!' : 'Listing paused successfully!')
-        );
-        return { ...item, status: nextStatus };
+  // Fetch live user listings and profile details
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        setEmail(user.email || '');
+
+        // 1. Fetch user profile settings from public.profiles
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setFullName(profile.full_name || '');
+          setPhone(profile.phone || '');
+          setGovernorate(profile.governorate || 'sanaa_city');
+        }
+
+        // 2. Fetch user's listings
+        const { data: listings } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (listings) {
+          setListingsList(listings.map(item => ({
+            id: item.id,
+            titleEn: item.title_en,
+            titleAr: item.title_ar,
+            price: `${item.price} ${item.currency}`,
+            category: item.category,
+            type: item.type,
+            status: item.status,
+            views: item.views || 0,
+            favorites: item.favorites || 0
+          })));
+        }
+      } catch (e) {
+        console.error(e);
       }
-      return item;
-    }));
+    }
+    loadDashboardData();
+  }, []);
+
+  // Edit Listing Modal State
+  const [editingItem, setEditingItem] = useState<ListingItem | null>(null);
+  const [editTitleEn, setEditTitleEn] = useState('');
+  const [editTitleAr, setEditTitleAr] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+
+  const openEditModal = (item: ListingItem) => {
+    setEditingItem(item);
+    setEditTitleEn(item.titleEn || '');
+    setEditTitleAr(item.titleAr || '');
+    setEditPrice(item.price ? item.price.toString().replace(/[^0-9.]/g, '') : '');
+    setEditCategory(item.category || 'cars');
   };
 
-  const handleMarkComplete = (id: string, type: 'sale' | 'rent') => {
-    setListingsList(prev => prev.map(item => {
-      if (item.id === id) {
-        const nextStatus = type === 'sale' ? 'sold' : 'rented';
-        triggerToast(
-          isAr 
-            ? (type === 'sale' ? 'تم تمييز الإعلان كمباع!' : 'تم تمييز الإعلان كمؤجر!') 
-            : (type === 'sale' ? 'Listing marked as Sold!' : 'Listing marked as Rented!')
-        );
-        return { ...item, status: nextStatus };
-      }
-      return item;
-    }));
-  };
-
-  const handleRenew = (id: string) => {
-    setListingsList(prev => prev.map(item => {
-      if (item.id === id) {
-        triggerToast(isAr ? 'تم إعادة نشر وتجديد الإعلان بنجاح!' : 'Listing renewed & republished successfully!');
-        return { ...item, status: 'active' };
-      }
-      return item;
-    }));
-  };
-
-  const handleDelete = (id: string) => {
-    setListingsList(prev => prev.filter(item => item.id !== id));
-    triggerToast(isAr ? 'تم حذف الإعلان بنجاح!' : 'Listing deleted successfully!');
-  };
-
-  const handleDuplicate = (item: ListingItem) => {
-    const duplicated: ListingItem = {
-      ...item,
-      id: Date.now().toString(),
-      titleEn: `${item.titleEn} (Copy)`,
-      titleAr: `${item.titleAr} (نسخة)`,
-      status: 'active',
-      views: 0,
-      favorites: 0
-    };
-    setListingsList(prev => [...prev, duplicated]);
-    triggerToast(isAr ? 'تم تكرار الإعلان بنجاح كنسخة جديدة!' : 'Listing duplicated successfully as a new copy!');
-  };
-
-  const handleProfileSave = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    triggerToast(isAr ? 'تم حفظ بيانات الملف الشخصي بنجاح!' : 'Profile settings saved successfully!');
+    if (!editingItem) return;
+
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({
+          title_en: editTitleEn,
+          title_ar: editTitleAr,
+          price: Number(editPrice),
+          category: editCategory
+        })
+        .eq('id', editingItem.id);
+
+      if (error) throw error;
+
+      setListingsList(prev => prev.map(l => l.id === editingItem.id ? {
+        ...l,
+        titleEn: editTitleEn,
+        titleAr: editTitleAr,
+        price: `${editPrice} USD`,
+        category: editCategory
+      } : l));
+
+      setEditingItem(null);
+      triggerToast(isAr ? 'تم تعديل تفاصيل الإعلان بنجاح!' : 'Listing details updated successfully!');
+    } catch (err: any) {
+      triggerToast(err.message || 'Error updating listing');
+    }
+  };
+
+  // Action handlers wired to Supabase API
+  const handleTogglePause = async (id: string) => {
+    const item = listingsList.find(l => l.id === id);
+    if (!item) return;
+    const nextStatus = item.status === 'paused' ? 'approved' : 'paused';
+
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: nextStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setListingsList(prev => prev.map(l => l.id === id ? { ...l, status: nextStatus } : l));
+      triggerToast(
+        isAr 
+          ? (nextStatus === 'approved' ? 'تم استئناف الإعلان بنجاح ونشره!' : 'تم إيقاف الإعلان مؤقتاً!') 
+          : (nextStatus === 'approved' ? 'Listing resumed & published live!' : 'Listing paused successfully!')
+      );
+    } catch (err: any) {
+      triggerToast(err.message || 'Error occurred');
+    }
+  };
+
+  const handleMarkComplete = async (id: string, type: 'sale' | 'rent') => {
+    const nextStatus = type === 'sale' ? 'sold' : 'rented';
+
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: nextStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setListingsList(prev => prev.map(l => l.id === id ? { ...l, status: nextStatus } : l));
+      triggerToast(
+        isAr 
+          ? (type === 'sale' ? 'تم تمييز الإعلان كمباع!' : 'تم تمييز الإعلان كمؤجر!') 
+          : (type === 'sale' ? 'Listing marked as Sold!' : 'Listing marked as Rented!')
+      );
+    } catch (err: any) {
+      triggerToast(err.message || 'Error occurred');
+    }
+  };
+
+  const handleRenew = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .update({ status: 'active' })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setListingsList(prev => prev.map(l => l.id === id ? { ...l, status: 'active' } : l));
+      triggerToast(isAr ? 'تم إعادة نشر وتجديد الإعلان بنجاح!' : 'Listing renewed & republished successfully!');
+    } catch (err: any) {
+      triggerToast(err.message || 'Error occurred');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setListingsList(prev => prev.filter(l => l.id !== id));
+      triggerToast(isAr ? 'تم حذف الإعلان بنجاح!' : 'Listing deleted successfully!');
+    } catch (err: any) {
+      triggerToast(err.message || 'Error occurred');
+    }
+  };
+
+  const handleDuplicate = async (item: ListingItem) => {
+    try {
+      // 1. Fetch original record details to replicate
+      const { data: original, error: fetchErr } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('id', item.id)
+        .single();
+
+      if (fetchErr || !original) throw fetchErr || new Error('Could not retrieve original listing details');
+
+      // 2. Insert duplicated copy
+      const { data: newRecord, error: insertErr } = await supabase
+        .from('listings')
+        .insert({
+          owner_id: original.owner_id,
+          title_en: `${original.title_en} (Copy)`,
+          title_ar: `${original.title_ar} (نسخة)`,
+          description_en: original.description_en,
+          description_ar: original.description_ar,
+          price: original.price,
+          currency: original.currency,
+          category: original.category,
+          type: original.type,
+          governorate: original.governorate,
+          images: original.images,
+          video_url: original.video_url,
+          specifications: original.specifications,
+          condition: original.condition,
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (insertErr || !newRecord) throw insertErr || new Error('Failed to save duplicated copy');
+
+      setListingsList(prev => [
+        {
+          id: newRecord.id,
+          titleEn: newRecord.title_en,
+          titleAr: newRecord.title_ar,
+          price: `${newRecord.price} ${newRecord.currency}`,
+          category: newRecord.category,
+          type: newRecord.type,
+          status: newRecord.status,
+          views: 0,
+          favorites: 0
+        },
+        ...prev
+      ]);
+
+      triggerToast(isAr ? 'تم تكرار الإعلان بنجاح كنسخة جديدة!' : 'Listing duplicated successfully as a new copy!');
+    } catch (err: any) {
+      triggerToast(err.message || 'Error occurred');
+    }
+  };
+
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          phone: phone,
+          governorate: governorate
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      triggerToast(isAr ? 'تم حفظ بيانات الملف الشخصي بنجاح!' : 'Profile settings saved successfully!');
+    } catch (err: any) {
+      triggerToast(err.message || 'Error saving profile');
+    }
   };
 
   const handleSettingsSave = (e: React.FormEvent) => {
@@ -243,7 +430,8 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-extrabold self-stretch lg:self-auto justify-end">
                           <button 
                             type="button"
-                            className="px-2.5 py-1.5 border border-deumah-gray-200 rounded hover:bg-deumah-gray-50 text-deumah-gray-700 cursor-pointer"
+                            onClick={() => openEditModal(item)}
+                            className="px-2.5 py-1.5 border border-deumah-gray-200 rounded hover:bg-deumah-gray-50 text-deumah-gray-700 cursor-pointer transition shadow-xs"
                           >
                             ✏️ {isAr ? 'تعديل' : 'Edit'}
                           </button>
@@ -510,6 +698,92 @@ export default function DashboardPage() {
         <div className="fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium">
           <span className="size-5 rounded-full bg-deumah-green-700 text-white flex items-center justify-center font-bold text-xs font-heading">✓</span>
           <span className="text-xs font-semibold">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Edit Listing Modal Overlay */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-deumah max-w-lg w-full p-6 shadow-deumah-search space-y-4 animate-slide-in">
+            <div className="flex justify-between items-center pb-3 border-b border-deumah-gray-100">
+              <h3 className="font-extrabold text-deumah-navy-950 text-base font-heading">
+                ✏️ {isAr ? 'تعديل تفاصيل الإعلان' : 'Edit Listing Details'}
+              </h3>
+              <button onClick={() => setEditingItem(null)} className="text-deumah-gray-400 hover:text-deumah-navy-950 font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs font-bold">
+              <div>
+                <label className="block text-deumah-gray-600 mb-1">{isAr ? 'عنوان الإعلان (بالإنجليزية)' : 'Title (English)'}</label>
+                <input
+                  type="text"
+                  value={editTitleEn}
+                  onChange={e => setEditTitleEn(e.target.value)}
+                  className="w-full border border-deumah-gray-200 rounded p-2.5 outline-none focus:border-deumah-green-600"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-deumah-gray-600 mb-1">{isAr ? 'عنوان الإعلان (بالعربية)' : 'Title (Arabic)'}</label>
+                <input
+                  type="text"
+                  value={editTitleAr}
+                  onChange={e => setEditTitleAr(e.target.value)}
+                  className="w-full border border-deumah-gray-200 rounded p-2.5 outline-none focus:border-deumah-green-600"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-deumah-gray-600 mb-1">{isAr ? 'السعر (USD)' : 'Price (USD)'}</label>
+                  <input
+                    type="number"
+                    value={editPrice}
+                    onChange={e => setEditPrice(e.target.value)}
+                    className="w-full border border-deumah-gray-200 rounded p-2.5 outline-none focus:border-deumah-green-600 font-bold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-deumah-gray-600 mb-1">{isAr ? 'الفئة' : 'Category'}</label>
+                  <select
+                    value={editCategory}
+                    onChange={e => setEditCategory(e.target.value)}
+                    className="w-full border border-deumah-gray-200 rounded p-2.5 outline-none focus:border-deumah-green-600 bg-white font-bold"
+                  >
+                    <option value="cars">{isAr ? 'سيارات مركبات' : 'Cars & Vehicles'}</option>
+                    <option value="properties">{isAr ? 'عقارات ومباني' : 'Real Estate'}</option>
+                    <option value="electronics">{isAr ? 'إلكترونيات' : 'Electronics'}</option>
+                    <option value="furniture_home">{isAr ? 'أثاث ومنزل' : 'Furniture & Home'}</option>
+                    <option value="services">{isAr ? 'خدمات' : 'Services'}</option>
+                    <option value="tools">{isAr ? 'معدات وأدوات' : 'Tools'}</option>
+                    <option value="fashion">{isAr ? 'أزياء وموضة' : 'Fashion'}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="w-1/2 border border-deumah-gray-200 py-2.5 rounded font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition cursor-pointer"
+                >
+                  {isAr ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 bg-deumah-green-700 hover:bg-deumah-green-600 text-white py-2.5 rounded font-bold transition shadow-xs cursor-pointer"
+                >
+                  ✓ {isAr ? 'حفظ التعديلات' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

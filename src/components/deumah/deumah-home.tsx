@@ -1,13 +1,16 @@
 'use client';
-import {useState} from 'react';
+
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import {useLocale, useTranslations} from 'next-intl';
-import {ActionCard} from './action-card';
-import {CategoryCard} from './category-card';
-import {ListingCard} from './listing-card';
-import {CartIcon, HomeIcon, SearchIcon, ShieldIcon, TagIcon, TruckIcon} from './icons';
-import {DeumahHeader} from './deumah-header';
-import {Link} from '@/i18n/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import { ActionCard } from './action-card';
+import { CategoryCard } from './category-card';
+import { ListingCard } from './listing-card';
+import { CartIcon, HomeIcon, SearchIcon, ShieldIcon, TagIcon, TruckIcon } from './icons';
+import { DeumahHeader } from './deumah-header';
+import { Footer } from '@/components/layout/Footer';
+import { Link } from '@/i18n/navigation';
+import { supabase } from '@/lib/supabase';
 
 const YEMEN_CITIES = [
   { id: 'sanaa_city', en: "Sana'a City (Capital Municipality)", ar: "أمانة العاصمة" },
@@ -34,93 +37,215 @@ const YEMEN_CITIES = [
   { id: 'socotra', en: "Socotra", ar: "سقطرى" }
 ];
 
-const categoryIcons=[HomeIcon,HomeIcon,CartIcon,HomeIcon,ShieldIcon,TagIcon,TagIcon,HomeIcon,CartIcon,TagIcon];
-const listingImages=[
-  'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&auto=format&fit=crop&q=80'
-];
+export function DeumahHome() {
+  const locale = useLocale();
+  const isAr = locale === 'ar';
+  const hero = useTranslations('Hero');
+  const search = useTranslations('Search');
+  const actions = useTranslations('Actions');
+  const categories = useTranslations('Categories');
+  const listings = useTranslations('Listings');
+  const trust = useTranslations('Trust');
+  const promos = useTranslations('Promos');
 
-export function DeumahHome(){
- const locale=useLocale();
- const isAr=locale==='ar';
- const hero=useTranslations('Hero'), search=useTranslations('Search'), actions=useTranslations('Actions'), categories=useTranslations('Categories'), listings=useTranslations('Listings'), trust=useTranslations('Trust'), promos=useTranslations('Promos');
- const categoryKeys=['cars','properties','electronics','furniture','services','tools','fashion','kids','hobbies','wedding_halls','chalets','more'] as const;
+  const categoryKeys = ['cars', 'properties', 'electronics', 'furniture', 'services', 'tools', 'fashion', 'kids', 'hobbies', 'wedding_halls', 'chalets', 'more'] as const;
 
- const [query, setQuery] = useState('');
- const [category, setCategory] = useState('');
- const [city, setCity] = useState('');
- const [shippingModalOpen, setShippingModalOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('');
+  const [city, setCity] = useState('');
+  const [shippingModalOpen, setShippingModalOpen] = useState(false);
 
- const searchUrl = `/${locale}/listings?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&city=${encodeURIComponent(city)}`;
+  // Live Supabase Approved Listings State
+  const [liveListings, setLiveListings] = useState<any[]>([]);
 
- return (
-    <div className="min-h-screen bg-deumah-gray-50 text-deumah-navy-950 relative">
-      <DeumahHeader/>
+  useEffect(() => {
+    async function fetchApprovedListings() {
+      try {
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .in('status', ['approved', 'active'])
+          .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+          setLiveListings(data);
+        }
+      } catch (e) {
+        console.error('Homepage fetch error:', e);
+      }
+    }
+    fetchApprovedListings();
+  }, []);
+
+  const searchUrl = `/listings?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&city=${encodeURIComponent(city)}`;
+
+  // Default fallback static items
+  const fallbackListings = [
+    {
+      id: '1',
+      image: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80',
+      title: isAr ? 'تويوتا لاند كروزر 2021' : 'Toyota Land Cruiser 2021',
+      price: isAr ? '٨٥ دولار / يوم' : '$85 / Day',
+      location: isAr ? 'صنعاء' : "Sana'a",
+      badge: listings('rent'),
+      badgeTone: 'rent' as const
+    },
+    {
+      id: '2',
+      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&auto=format&fit=crop&q=80',
+      title: isAr ? 'فيلا في شارع السبعين' : 'Villa in Al-Sabeen Street',
+      price: isAr ? '٩٥٠ دولار / شهر' : '$950 / Month',
+      location: isAr ? 'صنعاء' : "Sana'a",
+      badge: listings('rent'),
+      badgeTone: 'rent' as const
+    },
+    {
+      id: '3',
+      image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
+      title: isAr ? 'كاميرا كانون 80D' : 'Canon 80D Camera',
+      price: isAr ? '٤٥٠ دولار' : '$450',
+      location: isAr ? 'صنعاء' : "Sana'a",
+      badge: listings('sell'),
+      badgeTone: 'sell' as const
+    },
+    {
+      id: '4',
+      image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&auto=format&fit=crop&q=80',
+      title: isAr ? 'دراجة هوائية' : 'Bicycle',
+      price: isAr ? '١٥ دولار / يوم' : '$15 / Day',
+      location: isAr ? 'صنعاء' : "Sana'a",
+      badge: listings('rent'),
+      badgeTone: 'rent' as const
+    }
+  ];
+
+  const displayListings = liveListings.map(item => ({
+    id: item.id,
+    image: item.images?.[0] || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80',
+    title: isAr ? (item.title_ar || item.title_en) : item.title_en,
+    price: item.type === 'rent' ? `${item.price} ${item.currency || 'USD'} / ${isAr ? 'يوم' : 'Day'}` : `${item.price} ${item.currency || 'USD'}`,
+    location: item.governorate === 'sanaa_city' ? (isAr ? 'أمانة العاصمة' : "Sana'a City") : (isAr ? 'صنعاء' : "Sana'a"),
+    badge: item.type === 'sell' ? listings('sell') : listings('rent'),
+    badgeTone: (item.type === 'sell' ? 'sell' : 'rent') as 'sell' | 'rent'
+  }));
+
+  return (
+    <div className="min-h-screen bg-deumah-gray-50 text-deumah-navy-950">
+      <DeumahHeader />
+
       <main>
-        <section className="bg-deumah-navy-950 py-12 text-white sm:py-20 lg:py-28 bg-cover bg-center" style={{ backgroundImage: `url('/deumah_hero_bg_1784086248007.png')` }}>
+        {/* HERO SECTION MATCHING EXACT DEPLOYMENT VERCEL HTML/CSS */}
+        <section className="relative isolate overflow-hidden bg-deumah-navy-950 text-white">
+          <Image
+            src="/hero_bg.png"
+            alt="Sana'a skyline at sunset"
+            fill
+            sizes="100vw"
+            priority
+            className="-z-20 object-cover"
+          />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-deumah-navy-950 via-deumah-navy-950/75 to-deumah-navy-950/25 rtl:bg-gradient-to-l" />
+
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+            
+            {/* Headline */}
             <div className="max-w-2xl">
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl font-heading">
                 <span className="block">{hero('titleLine1')}</span>
                 <span className="block text-deumah-green-600">{hero('titleLine2')}</span>
               </h1>
-              <p className="mt-4 text-lg text-white/85">{hero('subtitle')}</p>
+              <p className="mt-4 text-lg text-white/85">
+                {hero('subtitle')}
+              </p>
             </div>
-            
+
+            {/* SEARCH BAR (ALL CATEGORIES -> INPUT -> CITY -> SEARCH BUTTON) */}
             <div className="mt-8 grid gap-3 rounded-deumah-lg bg-white p-3 text-deumah-navy-950 shadow-deumah-search md:grid-cols-[180px_1fr_160px_auto]">
+              
+              {/* Category Select */}
               <select
                 value={category}
-                onChange={e => setCategory(e.target.value)}
+                onChange={(e) => setCategory(e.target.value)}
                 className="rounded-deumah-sm border border-deumah-gray-200 px-4 py-3 text-sm bg-transparent outline-none cursor-pointer focus:border-deumah-green-600 transition"
               >
-                <option value="">{search('category')}</option>
-                {categoryKeys.filter(k => k !== 'more').map(k => (
-                  <option key={k} value={k}>{categories(k)}</option>
+                <option value="">{search('allCategories')}</option>
+                {categoryKeys.filter(k => k !== 'more').map((cat) => (
+                  <option key={cat} value={cat}>{categories(cat)}</option>
                 ))}
               </select>
 
+              {/* Text Input */}
               <label className="flex items-center gap-3 rounded-deumah-sm px-3 border border-deumah-gray-200 md:border-none">
-                <SearchIcon className="size-5 text-deumah-gray-500"/>
-                <input 
-                  aria-label={search('placeholder')} 
-                  placeholder={search('placeholder')} 
+                <SearchIcon className="size-5 text-deumah-gray-500 shrink-0" />
+                <input
+                  aria-label={search('placeholder')}
+                  placeholder={search('placeholder')}
                   value={query}
-                  onChange={e => setQuery(e.target.value)}
+                  onChange={(e) => setQuery(e.target.value)}
                   className="min-w-0 flex-1 bg-transparent py-3 outline-none"
                 />
               </label>
 
+              {/* City Select */}
               <select
                 value={city}
-                onChange={e => setCity(e.target.value)}
+                onChange={(e) => setCity(e.target.value)}
                 className="rounded-deumah-sm border border-deumah-gray-200 px-4 py-3 text-sm bg-transparent outline-none cursor-pointer focus:border-deumah-green-600 transition"
               >
-                <option value="">{isAr ? 'المحافظة' : 'City'}</option>
-                {YEMEN_CITIES.map(c => (
+                <option value="">{isAr ? 'المدينة' : 'City'}</option>
+                {YEMEN_CITIES.map((c) => (
                   <option key={c.id} value={c.id}>{isAr ? c.ar : c.en}</option>
                 ))}
               </select>
 
-              <a href={searchUrl} className="rounded-deumah-sm bg-deumah-green-700 px-6 py-3 font-semibold text-white hover:bg-deumah-green-600 text-center flex items-center justify-center transition">
+              {/* Search Button */}
+              <Link
+                href={searchUrl}
+                className="rounded-deumah-sm bg-deumah-green-700 px-6 py-3 font-semibold text-white hover:bg-deumah-green-600 text-center flex items-center justify-center transition font-heading"
+              >
                 {search('button')}
-              </a>
+              </Link>
             </div>
-            
+
+            {/* 4 ACTION BUTTON CARDS */}
             <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <ActionCard tone="rent" title={actions('rent')} description={actions('rentDescription')} icon={<HomeIcon/>}/>
-              <ActionCard tone="buy" title={actions('buy')} description={actions('buyDescription')} icon={<CartIcon/>}/>
-              <ActionCard tone="sell" title={actions('sell')} description={actions('sellDescription')} icon={<TagIcon/>}/>
-              <ActionCard tone="delivery" title={actions('delivery')} description={actions('deliveryDescription')} icon={<TruckIcon/>}/>
+              <ActionCard
+                title={actions('rentTitle')}
+                description={actions('rentDescription')}
+                icon={<HomeIcon className="size-6" />}
+                tone="rent"
+              />
+              <ActionCard
+                title={actions('buyTitle')}
+                description={actions('buyDescription')}
+                icon={<CartIcon className="size-6" />}
+                tone="buy"
+              />
+              <ActionCard
+                title={actions('sellTitle')}
+                description={actions('sellDescription')}
+                icon={<TagIcon className="size-6" />}
+                tone="sell"
+              />
+              <ActionCard
+                title={actions('delivery')}
+                description={actions('deliveryDescription')}
+                icon={<TruckIcon className="size-6" />}
+                tone="delivery"
+              />
             </div>
-            
+
+            {/* Trusted Pill */}
             <div className="mt-4 flex justify-end">
-              <div className="rounded-deumah bg-deumah-navy-900/85 px-5 py-3 text-sm">{hero('trusted')}</div>
+              <div className="rounded-deumah bg-deumah-navy-900/85 px-5 py-3 text-sm">
+                {hero('trusted')}
+              </div>
             </div>
+
           </div>
         </section>
 
+        {/* BROWSE CATEGORIES SECTION */}
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">{categories('title')}</h2>
@@ -132,7 +257,7 @@ export function DeumahHome(){
             {categoryKeys.map((key) => {
               const categoryUrl = key === 'more' ? '/listings' : `/listings?category=${key}`;
               return (
-                <Link href={categoryUrl} key={key} className="shrink-0 w-[140px] sm:w-auto snap-start block hover:scale-102 transition">
+                <Link href={categoryUrl} key={key} className="shrink-0 w-[140px] sm:w-auto snap-start block">
                   <CategoryCard label={categories(key)} icon={<img src={`/deumah/icons/${key}.svg`} alt="" className="size-8 block object-contain" />} />
                 </Link>
               );
@@ -140,6 +265,7 @@ export function DeumahHome(){
           </div>
         </section>
 
+        {/* FEATURED LISTINGS GRID (DYNAMICAL FROM SUPABASE) */}
         <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">{listings('title')}</h2>
@@ -148,21 +274,36 @@ export function DeumahHome(){
             </Link>
           </div>
           <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {listingImages.map((image, i) => (
-              <Link href={`/listings/${i + 1}`} key={image} className="block hover:-translate-y-1 transition duration-300">
-                <ListingCard 
-                  image={image} 
-                  title={isAr ? ['تويوتا لاند كروزر 2021', 'فيلا في شارع السبعين', 'كاميرا كانون 80D', 'دراجة هوائية'][i] : ['Toyota Land Cruiser 2021', 'Villa in Al-Sabeen Street', 'Canon 80D Camera', 'Bicycle'][i]} 
-                  price={isAr ? ['٨٥ دولار / يوم', '٩٥٠ دولار / شهر', '٤٥٠ دولار', '١٥ دولار / يوم'][i] : ['$85 / Day', '$950 / Month', '$450', '$15 / Day'][i]} 
-                  location={isAr ? 'صنعاء' : "Sana'a"} 
-                  badge={i === 2 ? listings('sell') : listings('rent')} 
-                  badgeTone={i === 2 ? 'sell' : 'rent'}
-                />
-              </Link>
-            ))}
+            {displayListings.length === 0 ? (
+              <div className="col-span-full bg-white border border-deumah-gray-200 rounded-deumah p-8 text-center space-y-2 shadow-xs">
+                <span className="text-3xl block">📦</span>
+                <h3 className="text-sm font-bold text-deumah-navy-950 font-heading">
+                  {isAr ? 'لا توجد إعلانات نشطة حالياً' : 'No active listings currently available'}
+                </h3>
+                <p className="text-xs text-deumah-gray-500 font-medium">
+                  {isAr ? 'الإعلانات الموقوفة مؤقتاً تم إخفاؤها بنجاح.' : 'Paused or pending listings are hidden from public view until resumed or approved.'}
+                </p>
+              </div>
+            ) : (
+              displayListings.map((item) => (
+                <div key={item.id} className="block hover:-translate-y-1 transition duration-300">
+                  <ListingCard 
+                    id={item.id}
+                    image={item.image} 
+                    title={item.title} 
+                    price={item.price} 
+                    location={item.location} 
+                    badge={item.badge} 
+                    badgeTone={item.badgeTone}
+                    locale={locale}
+                  />
+                </div>
+              ))
+            )}
           </div>
         </section>
 
+        {/* TRUST BANNER BAR */}
         <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
           <div className="flex overflow-x-auto gap-6 pb-4 sm:grid sm:grid-cols-2 lg:grid-cols-5 rounded-deumah bg-deumah-navy-950 p-6 text-white scrollbar-none snap-x snap-mandatory">
             {['verified', 'payments', 'delivery', 'support', 'safe'].map(key => (
@@ -177,6 +318,7 @@ export function DeumahHome(){
           </div>
         </section>
 
+        {/* PROMO CARDS */}
         <section className="mx-auto grid max-w-7xl gap-5 px-4 pb-12 sm:px-6 lg:grid-cols-2 lg:px-8">
           <article className="rounded-deumah bg-deumah-green-100 p-7">
             <h2 className="text-2xl font-semibold text-deumah-green-700">{promos('postTitle')}</h2>
@@ -220,43 +362,45 @@ export function DeumahHome(){
                 </button>
               </div>
 
-              <div className="py-5 space-y-4">
-                <p className="text-xs text-deumah-gray-500 leading-relaxed">
+              <div className="py-4 space-y-4">
+                <p className="text-xs text-deumah-gray-500 leading-relaxed font-medium">
                   {isAr 
-                    ? 'تقوم ديومة بالربط مع أفضل شركات الشحن العالمية لتسهيل عمليات التصدير والاستيراد من وإلى اليمن بكل سهولة وأمان.' 
-                    : 'Deumah integrates with top global freight and shipping lines to facilitate smooth, secure imports and exports to and from Yemen.'}
+                    ? 'منصة ديومة تتعاون مع أسرع واأمن شركات الشحن اللوجستي لنقل البضائع والمركبات والمعدات داخل وخارج اليمن:' 
+                    : 'Deumah platform partners with top shipping and logistics operators for cargo, vehicle, and package shipping in Yemen:'}
                 </p>
 
-                <div className="grid gap-3">
+                <div className="space-y-2.5">
                   {[
-                    { name: 'DHL Yemen', area: isAr ? 'تغطية عالمية ومحلية كاملة' : 'Global & local courier coverage', rating: '4.8' },
-                    { name: 'FedEx Express', area: isAr ? 'شحن سريع جوي وبحري' : 'Express air & ocean freight', rating: '4.7' },
-                    { name: 'Aramex Yemen', area: isAr ? 'خدمات شحن بري وبحري متميزة' : 'Premium land & sea solutions', rating: '4.6' },
-                    { name: 'Yemen Post Express', area: isAr ? 'الخدمة البريدية الوطنية الرسمية' : 'Official national postal service', rating: '4.5' }
-                  ].map(partner => (
-                    <div key={partner.name} className="flex justify-between items-center p-3.5 border border-deumah-gray-100 rounded hover:border-deumah-green-200 transition">
-                      <div className="space-y-0.5">
-                        <h4 className="text-sm font-bold text-deumah-navy-950">{partner.name}</h4>
-                        <p className="text-[10px] text-deumah-gray-400 font-semibold">{partner.area}</p>
+                    { name: 'DHL Express Yemen', desc: isAr ? 'شحن جوي سريع دولي للمستندات والطلب الصغير' : 'International air express for documents & packages' },
+                    { name: 'FedEx / Sab Express', desc: isAr ? 'شحن جوي وبري للبضائع التجارية' : 'Air & express freight for commercial goods' },
+                    { name: 'Aramex Yemen', desc: isAr ? 'حلول التوصيل السريع والنقل اللوجستي المحلي' : 'Express courier and local logistics solutions' },
+                    { name: 'Yemen Post (البريد اليمني)', desc: isAr ? 'خدمات النقل والشحن المحلي بجميع المحافظات' : 'Domestic postal and parcel services across governorates' }
+                  ].map((partner, idx) => (
+                    <div key={idx} className="p-3 bg-deumah-gray-50 border border-deumah-gray-200 rounded-deumah-sm flex items-start gap-3">
+                      <span className="text-lg">🚚</span>
+                      <div>
+                        <h4 className="text-xs font-bold text-deumah-navy-950">{partner.name}</h4>
+                        <p className="text-[10px] text-deumah-gray-500 font-medium">{partner.desc}</p>
                       </div>
-                      <span className="text-[10px] font-extrabold bg-deumah-green-50 text-deumah-green-700 px-2 py-0.5 rounded border border-deumah-green-200">
-                        ⭐ {partner.rating}
-                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <button 
-              onClick={() => setShippingModalOpen(false)}
-              className="w-full bg-deumah-green-700 hover:bg-deumah-green-600 text-white font-bold py-3 rounded-deumah text-center transition"
-            >
-              {isAr ? 'إغلاق' : 'Close'}
-            </button>
+            <div className="pt-4 border-t border-deumah-gray-100 flex justify-end">
+              <button 
+                onClick={() => setShippingModalOpen(false)}
+                className="bg-deumah-navy-950 text-white text-xs font-bold px-5 py-2.5 rounded-deumah-sm hover:bg-deumah-navy-900 transition cursor-pointer"
+              >
+                {isAr ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
           </div>
         </>
       )}
+
+      <Footer />
     </div>
   );
 }

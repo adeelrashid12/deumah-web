@@ -18,12 +18,14 @@
     "notifications": "الإشعارات"
   },
   "Hero": {
+    "title": "تأجير. شراء. بيع. كل شيء في مكان واحد.",
     "titleLine1": "تأجير. شراء. بيع.",
     "titleLine2": "كل شيء في مكان واحد.",
     "subtitle": "كل ما تحتاجه، في أي وقت، وفي أي مكان.",
     "trusted": "موثوق من آلاف المستخدمين"
   },
   "Search": {
+    "allCategories": "جميع التصنيفات",
     "category": "جميع التصنيفات",
     "placeholder": "ماذا تبحث عنه؟",
     "location": "صنعاء",
@@ -31,13 +33,18 @@
   },
   "Actions": {
     "rent": "تأجير",
+    "rentTitle": "تأجير",
     "rentDescription": "ابحث عن أماكن وأشياء للتأجير",
     "buy": "شراء",
-    "buyDescription": "اشترِ منتجات جديدة ومستعملة",
+    "buyTitle": "شراء",
+    "buyDescription": "شراء سلع جديدة ومستعملة",
     "sell": "بيع",
-    "sellDescription": "بع أي شيء تملكه",
+    "sellTitle": "بيع",
+    "sellDescription": "بيع أي شيء تملكه",
     "delivery": "توصيل",
-    "deliveryDescription": "توصيل سريع وآمن"
+    "deliveryDescription": "توصيل سريع وآمن",
+    "shippingTitle": "الشحن الدولي",
+    "shippingDescription": "شركاء النقل اللوجستي والشحن الدولي"
   },
   "Categories": {
     "title": "تصفح التصنيفات",

@@ -5,6 +5,7 @@ import { useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { Link, useRouter } from '@/i18n/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function RegisterPage() {
   const locale = useLocale();
@@ -26,7 +27,7 @@ export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -53,15 +54,35 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    // Mock Registration Delay
-    setTimeout(() => {
+    try {
+      // Supabase Signup
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+            governorate: governorate
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
       setLoading(false);
       setShowSuccessToast(true);
       setTimeout(() => {
         setShowSuccessToast(false);
-        router.push('/');
-      }, 2000);
-    }, 1500);
+        router.push('/login');
+      }, 2500);
+
+    } catch (err: any) {
+      setLoading(false);
+      setErrorMsg(err.message || (isAr ? 'حدث خطأ أثناء إنشاء الحساب.' : 'An error occurred during registration.'));
+    }
   };
 
   return (
@@ -283,7 +304,7 @@ export default function RegisterPage() {
         <div className="fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium">
           <span className="size-5 rounded-full bg-deumah-green-700 text-white flex items-center justify-center font-bold text-xs">✓</span>
           <span className="text-xs font-semibold">
-            {isAr ? 'تم إنشاء حسابك بنجاح! جاري تحويلك...' : 'Account created successfully! Redirecting...'}
+            {isAr ? 'تم تسجيل الحساب بنجاح! جاري تحويلك لتسجيل الدخول...' : 'Account created successfully! Redirecting to login...'}
           </span>
         </div>
       )}

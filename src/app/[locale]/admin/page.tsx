@@ -195,7 +195,7 @@ export default function AdminPage() {
               {isAr ? 'English' : 'العربية'}
             </Link>
             <span className="text-xs bg-deumah-green-700 text-white font-extrabold px-3 py-1.5 rounded-deumah-sm flex items-center gap-1.5 shadow-xs">
-              🛡️ {isAr ? 'مدير منصة ديومة' : 'Super Admin'}
+              🛡️ {isAr ? 'مدير منصة دومه' : 'Super Admin'}
             </span>
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function AdminPage() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight font-heading">
-              {isAr ? 'لوحة تحكم وإدارة منصة ديومة' : 'Deumah Master Enterprise Admin'}
+              {isAr ? 'لوحة تحكم وإدارة منصة دومه' : 'Deumah Master Enterprise Admin'}
             </h1>
             <p className="text-xs text-white/70 font-medium">
               {isAr ? 'مراجعة وقبول الإعلانات، تتبع الناشرين، وإدارة أصحاب الحسابات المسجلة' : 'Review and approve ad listings, inspect publisher profiles, and manage registered user accounts'}

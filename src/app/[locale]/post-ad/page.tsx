@@ -307,7 +307,7 @@ export default function PostAdPage() {
       const { data, error } = await supabase
         .from('listings')
         .insert({
-          owner_id: user?.id || null, // Allow testing fallback
+          owner_id: user?.id,
           title_en: title,
           title_ar: title,
           description_en: description,
@@ -321,7 +321,7 @@ export default function PostAdPage() {
           video_url: videoFile?.url || null,
           specifications: specs,
           condition: itemCondition,
-          status: 'approved' // Set approved immediately for local testing
+          status: 'pending'
         });
 
       if (error) throw error;
@@ -1002,27 +1002,42 @@ export default function PostAdPage() {
                 />
               </div>
 
-              {/* Billing Period (Only if Rent selected) */}
+              {/* Currency */}
               <div>
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
-                  {isAr ? 'فترة الدفع' : 'Billing Period'}
+                  {isAr ? 'العملة' : 'Currency'}
                 </label>
                 <select
-                  value={billingPeriod}
-                  onChange={e => setBillingPeriod(e.target.value)}
-                  disabled={transactionType === 'sell'}
-                  className={`w-full text-sm border rounded-deumah-sm px-3 py-3 outline-none transition cursor-pointer font-semibold ${
-                    transactionType === 'sell'
-                      ? 'bg-deumah-gray-100 text-deumah-gray-400 border-deumah-gray-200 cursor-not-allowed'
-                      : 'bg-white border-deumah-gray-200 focus:border-deumah-green-600'
-                  }`}
+                  value={currency}
+                  onChange={e => setCurrency(e.target.value)}
+                  className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-semibold"
                 >
-                  <option value="day">{isAr ? 'لكل يوم' : 'Per Day'}</option>
-                  <option value="week">{isAr ? 'لكل أسبوع' : 'Per Week'}</option>
-                  <option value="month">{isAr ? 'لكل شهر' : 'Per Month'}</option>
-                  <option value="year">{isAr ? 'لكل سنة' : 'Per Year'}</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="YER">YER (ر.ي)</option>
+                  <option value="SAR">SAR (ر.س)</option>
                 </select>
               </div>
+
+              {/* Billing Period (Only if Rent selected) */}
+              {transactionType === 'rent' && (
+                <div>
+                  <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
+                    {isAr ? 'فترة الدفع' : 'Billing Period'}
+                  </label>
+                  <select
+                    value={billingPeriod}
+                    onChange={e => setBillingPeriod(e.target.value)}
+                    className="w-full text-sm border rounded-deumah-sm px-3 py-3 outline-none transition cursor-pointer font-semibold bg-white border-deumah-gray-200 focus:border-deumah-green-600"
+                  >
+                    <option value="none">{isAr ? 'لا ينطبق' : 'Not Applicable'}</option>
+                    <option value="hour">{isAr ? 'لكل ساعة' : 'Per Hour'}</option>
+                    <option value="day">{isAr ? 'لكل يوم' : 'Per Day'}</option>
+                    <option value="week">{isAr ? 'لكل أسبوع' : 'Per Week'}</option>
+                    <option value="month">{isAr ? 'لكل شهر' : 'Per Month'}</option>
+                    <option value="year">{isAr ? 'لكل سنة' : 'Per Year'}</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -1036,12 +1051,28 @@ export default function PostAdPage() {
                   onChange={e => setGovernorate(e.target.value)}
                   className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-semibold"
                 >
-                  <option value="sanaa_city">{isAr ? 'أمانة العاصمة / مدينة صنعاء' : "Sana'a City (Amanat Al Asimah)"}</option>
-                  <option value="sanaa">{isAr ? 'محافظة صنعاء' : 'Sana\'a Governorate'}</option>
+                  <option value="sanaa_city">{isAr ? 'أمانة العاصمة' : "Sana'a City"}</option>
+                  <option value="sanaa">{isAr ? 'صنعاء' : 'Sana\'a'}</option>
                   <option value="aden">{isAr ? 'عدن' : 'Aden'}</option>
                   <option value="taiz">{isAr ? 'تعز' : 'Taiz'}</option>
-                  <option value="ibb">{isAr ? 'إب' : 'Ibb'}</option>
                   <option value="hadhramaut">{isAr ? 'حضرموت' : 'Hadhramaut'}</option>
+                  <option value="al_hudaydah">{isAr ? 'الحديدة' : 'Al Hudaydah'}</option>
+                  <option value="ibb">{isAr ? 'إب' : 'Ibb'}</option>
+                  <option value="amran">{isAr ? 'عمران' : 'Amran'}</option>
+                  <option value="dhamar">{isAr ? 'ذمار' : 'Dhamar'}</option>
+                  <option value="al_jawf">{isAr ? 'الجوف' : 'Al Jawf'}</option>
+                  <option value="hajjah">{isAr ? 'حجة' : 'Hajjah'}</option>
+                  <option value="shabwah">{isAr ? 'شبوة' : 'Shabwah'}</option>
+                  <option value="marib">{isAr ? 'مأرب' : 'Marib'}</option>
+                  <option value="al_bayda">{isAr ? 'البيضاء' : 'Al Bayda'}</option>
+                  <option value="saadah">{isAr ? 'صعدة' : 'Saadah'}</option>
+                  <option value="al_mahrah">{isAr ? 'المهرة' : 'Al Mahrah'}</option>
+                  <option value="abyan">{isAr ? 'أبين' : 'Abyan'}</option>
+                  <option value="lahij">{isAr ? 'لحج' : 'Lahij'}</option>
+                  <option value="al_dhale">{isAr ? 'الضالع' : 'Al Dhale'}</option>
+                  <option value="al_mahwit">{isAr ? 'المحويت' : 'Al Mahwit'}</option>
+                  <option value="raymah">{isAr ? 'ريمة' : 'Raymah'}</option>
+                  <option value="socotra">{isAr ? 'سقطرى' : 'Socotra'}</option>
                 </select>
               </div>
 
@@ -1098,7 +1129,7 @@ export default function PostAdPage() {
                   onChange={e => setContactChat(e.target.checked)}
                   className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                 />
-                <span>{isAr ? 'دردشة ديومة الداخلية' : 'Deumah Chat'}</span>
+                <span>{isAr ? 'دردشة دومه الداخلية' : 'Deumah Chat'}</span>
               </label>
 
               <label className="flex items-center gap-2 text-xs font-bold text-deumah-gray-700 cursor-pointer">
@@ -1124,7 +1155,7 @@ export default function PostAdPage() {
               />
               <span>
                 {isAr 
-                  ? 'أوافق على اتفاقية شروط الاستخدام، سياسة الخصوصية وقواعد النشر الخاصة بمنصة ديومة.' 
+                  ? 'أوافق على اتفاقية شروط الاستخدام، سياسة الخصوصية وقواعد النشر الخاصة بمنصة دومه.' 
                   : 'I agree to the Terms of Use, Privacy Policy, and listing rules of the Deumah platform.'}
               </span>
             </label>

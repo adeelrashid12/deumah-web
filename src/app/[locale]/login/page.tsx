@@ -13,7 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   // Form State
-  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -28,8 +28,8 @@ export default function LoginPage() {
     setErrorMsg('');
 
     // Basic Validation
-    if (!loginIdentifier.trim() || !password.trim()) {
-      setErrorMsg(isAr ? 'يرجى إدخال البريد الإلكتروني أو رقم الهاتف وكلمة المرور!' : 'Please enter your email or phone number and password!');
+    if (!email.trim() || !password.trim()) {
+      setErrorMsg(isAr ? 'يرجى إدخال البريد الإلكتروني وكلمة المرور!' : 'Please enter your email and password!');
       return;
     }
 
@@ -41,15 +41,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const isEmail = loginIdentifier.includes('@');
-      let credentials: any = { password };
-
-      if (isEmail) {
-        credentials.email = loginIdentifier.trim().toLowerCase();
-      } else {
-        // Handle basic phone number sanitization if needed
-        credentials.phone = loginIdentifier.trim();
-      }
+      let credentials: any = { password, email: email.trim().toLowerCase() };
 
       const { data, error } = await supabase.auth.signInWithPassword(credentials);
 
@@ -85,7 +77,7 @@ export default function LoginPage() {
               {isAr ? 'تسجيل الدخول' : 'Sign In'}
             </h1>
             <p className="text-xs text-deumah-gray-500 font-medium">
-              {isAr ? 'مرحباً بك مجدداً في منصة ديومة' : 'Welcome back to Deumah Platform'}
+              {isAr ? 'مرحباً بك مجدداً في منصة دومه' : 'Welcome back to Deumah Platform'}
             </p>
           </div>
 
@@ -102,13 +94,13 @@ export default function LoginPage() {
             {/* Identifier Field */}
             <div>
               <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
-                {isAr ? 'البريد الإلكتروني أو رقم الهاتف' : 'Email Address or Phone Number'}
+                {isAr ? 'البريد الإلكتروني' : 'Email Address'}
               </label>
               <input
-                type="text"
-                placeholder={isAr ? 'name@example.com أو 77xxxxxxx' : 'name@example.com or 77xxxxxxx'}
-                value={loginIdentifier}
-                onChange={e => setLoginIdentifier(e.target.value)}
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 disabled={loading}
                 className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                 required

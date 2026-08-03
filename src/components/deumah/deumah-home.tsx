@@ -365,7 +365,7 @@ export function DeumahHome() {
               <div className="py-4 space-y-4">
                 <p className="text-xs text-deumah-gray-500 leading-relaxed font-medium">
                   {isAr 
-                    ? 'منصة ديومة تتعاون مع أسرع واأمن شركات الشحن اللوجستي لنقل البضائع والمركبات والمعدات داخل وخارج اليمن:' 
+                    ? 'منصة دومه تتعاون مع أسرع واأمن شركات الشحن اللوجستي لنقل البضائع والمركبات والمعدات داخل وخارج اليمن:' 
                     : 'Deumah platform partners with top shipping and logistics operators for cargo, vehicle, and package shipping in Yemen:'}
                 </p>
 

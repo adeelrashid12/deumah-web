@@ -674,7 +674,7 @@ export default function DashboardPage() {
                       onChange={e => setNewsletterEnabled(e.target.checked)}
                       className="rounded border-deumah-gray-200 accent-deumah-green-700 size-4 cursor-pointer"
                     />
-                    <span>{isAr ? 'الاشتراك في النشرة الإخبارية وعروض ديومة' : 'Subscribe to Deumah newsletters and deals'}</span>
+                    <span>{isAr ? 'الاشتراك في النشرة الإخبارية وعروض دومه' : 'Subscribe to Deumah newsletters and deals'}</span>
                   </label>
                 </div>
 

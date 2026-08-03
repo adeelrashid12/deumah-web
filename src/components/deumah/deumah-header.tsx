@@ -163,6 +163,9 @@ export function DeumahHeader() {
               </div>
 
               <nav className="flex flex-col gap-4 text-sm font-semibold">
+                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="hover:text-deumah-green-600 transition flex items-center gap-2 border-b border-white/10 pb-3">
+                  🏠 {locale === 'ar' ? 'الرئيسية' : 'Home'}
+                </Link>
                 <Link href="/listings?type=rent" onClick={() => setMobileMenuOpen(false)} className="hover:text-deumah-green-600 transition">
                   {t('rent')}
                 </Link>

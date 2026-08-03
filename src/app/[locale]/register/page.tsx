@@ -100,7 +100,7 @@ export default function RegisterPage() {
               {isAr ? 'إنشاء حساب جديد' : 'Create Account'}
             </h1>
             <p className="text-xs text-deumah-gray-500 font-medium">
-              {isAr ? 'انضم إلى مجتمع ديومة للمشاركة والتأجير والبيع' : 'Join Deumah community to share, rent, and sell'}
+              {isAr ? 'انضم إلى مجتمع دومه للمشاركة والتأجير والبيع' : 'Join Deumah community to share, rent, and sell'}
             </p>
           </div>
 
@@ -137,7 +137,7 @@ export default function RegisterPage() {
               </label>
               <input
                 type="tel"
-                placeholder={isAr ? '77xxxxxxx' : '77xxxxxxx'}
+                placeholder={isAr ? '77xxxxxxx (للتواصل في الإعلانات)' : '77xxxxxxx (For listing contact)'}
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 disabled={loading}
@@ -235,7 +235,7 @@ export default function RegisterPage() {
                 />
                 <span>
                   {isAr 
-                    ? 'أوافق على اتفاقية شروط الاستخدام وقواعد النشر الخاصة بمنصة ديومة.' 
+                    ? 'أوافق على اتفاقية شروط الاستخدام وقواعد النشر الخاصة بمنصة دومه.' 
                     : 'I agree to the Terms of Use and listing rules of the Deumah platform.'}
                 </span>
               </label>

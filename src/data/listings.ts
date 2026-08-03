@@ -190,7 +190,7 @@ export const LISTINGS_DB: Record<string, ListingItem> = {
     ],
     owner: {
       nameEn: 'Deumah Wedding Services',
-      nameAr: 'ديومة لخدمات المناسبات',
+      nameAr: 'دومه لخدمات المناسبات',
       avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
       memberSinceEn: 'November 2021',
       memberSinceAr: 'نوفمبر ٢٠٢١',

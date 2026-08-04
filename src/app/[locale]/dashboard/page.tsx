@@ -23,6 +23,36 @@ export default function DashboardPage() {
   const locale = useLocale();
   const isAr = locale === 'ar';
 
+  const catT: Record<string, string> = {
+    cars: 'سيارات',
+    properties: 'عقارات',
+    electronics: 'إلكترونيات',
+    furniture: 'أثاث منزلي',
+    services: 'خدمات',
+    tools: 'معدات',
+    fashion: 'أزياء',
+    kids: 'أطفال',
+    hobbies: 'هوايات',
+    wedding_halls: 'قاعات أفراح',
+    chalets: 'شاليهات'
+  };
+
+  const formatPrice = (priceStr: string, isAr: boolean) => {
+    const parts = priceStr.split(' ');
+    if (parts.length < 2) return priceStr;
+    const val = parts[0];
+    const curr = parts[1];
+    const num = Number(val);
+    if (isNaN(num)) return priceStr;
+    
+    if (isAr) {
+      const formattedNum = num.toLocaleString('ar-EG');
+      const currencyAr = curr === 'YER' ? 'ر.ي' : curr === 'SAR' ? 'ر.س' : curr === 'USD' ? '$' : curr;
+      return `${formattedNum} ${currencyAr}`;
+    }
+    return `${num.toLocaleString('en-US')} ${curr}`;
+  };
+
   // Tabs navigation state: My Listings, Messages, Saved Listings, Profile, Settings
   const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'saved' | 'profile' | 'settings'>('listings');
 
@@ -398,9 +428,11 @@ export default function DashboardPage() {
                       <div key={item.id} className="p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-sm font-extrabold text-deumah-navy-950">
-                              {isAr ? item.titleAr : item.titleEn}
-                            </h3>
+                            <Link href={`/listings/${item.id}`} className="hover:underline">
+                              <h3 className="text-sm font-extrabold text-deumah-navy-950">
+                                {isAr ? item.titleAr : item.titleEn}
+                              </h3>
+                            </Link>
                             <span className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
                               item.status === 'active'
                                 ? 'bg-deumah-green-50 text-deumah-green-700 border-deumah-green-200'
@@ -418,9 +450,9 @@ export default function DashboardPage() {
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-[10px] font-semibold text-deumah-gray-400">
-                            <span>{item.category}</span>
+                            <span>{isAr ? (catT[item.category] || item.category) : item.category}</span>
                             <span>•</span>
-                            <span className="text-deumah-green-700 font-bold">{item.price}</span>
+                            <span className="text-deumah-green-700 font-bold">{formatPrice(item.price, isAr)}</span>
                             <span>•</span>
                             <span>👁️ {item.views} {isAr ? 'مشاهدة' : 'views'}</span>
                           </div>
@@ -428,6 +460,13 @@ export default function DashboardPage() {
 
                         {/* Interactive Listing Action Buttons Toolbar */}
                         <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-extrabold self-stretch lg:self-auto justify-end">
+                          <Link 
+                            href={`/listings/${item.id}`}
+                            className="px-2.5 py-1.5 border border-deumah-gray-200 rounded hover:bg-deumah-gray-50 text-deumah-gray-700 transition shadow-xs flex items-center gap-1"
+                          >
+                            👁️ {isAr ? 'عرض' : 'View'}
+                          </Link>
+                          
                           <button 
                             type="button"
                             onClick={() => openEditModal(item)}

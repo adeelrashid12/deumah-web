@@ -93,10 +93,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['listings', 'messages', 'offers', 'saved', 'profile', 'settings'].includes(tab)) {
+    if (tab && ['listings', 'messages', 'offers', 'saved', 'support', 'profile', 'settings'].includes(tab)) {
       setActiveTab(tab as any);
     }
   }, [searchParams]);
+
+  // Persist active tab to URL so that refreshes don't lose position
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get('tab') !== activeTab) {
+        url.searchParams.set('tab', activeTab);
+        window.history.replaceState(null, '', url.toString());
+      }
+    }
+  }, [activeTab]);
 
   // Offers State
   const [offersList, setOffersList] = useState<OfferItem[]>([]);

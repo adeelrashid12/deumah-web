@@ -125,6 +125,13 @@ export default function DashboardPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const [blockedByUsers, setBlockedByUsers] = useState<string[]>([]);
+  const [mutedUsers, setMutedUsers] = useState<string[]>([]);
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+
+  // Report Modal State
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('spam');
+  const [reportDetails, setReportDetails] = useState('');
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -190,11 +197,13 @@ export default function DashboardPage() {
         setCurrentUser(user);
         setEmail(user.email || '');
 
-        // 0. Fetch blocks
+        // 0. Fetch blocks & mutes
         const { data: myBlocks } = await supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id);
         if (myBlocks) setBlockedUsers(myBlocks.map(b => b.blocked_id));
         const { data: blockedMe } = await supabase.from('user_blocks').select('blocker_id').eq('blocked_id', user.id);
         if (blockedMe) setBlockedByUsers(blockedMe.map(b => b.blocker_id));
+        const { data: myMutes } = await supabase.from('user_mutes').select('muted_id').eq('muter_id', user.id);
+        if (myMutes) setMutedUsers(myMutes.map(m => m.muted_id));
 
         // 1. Fetch user profile settings from public.profiles
         const { data: profile } = await supabase
@@ -376,6 +385,46 @@ export default function DashboardPage() {
     } catch (e) {
       console.error(e);
       triggerToast(isAr ? 'حدث خطأ' : 'An error occurred');
+    }
+  };
+
+  const handleToggleMute = async (userIdToMute: string) => {
+    try {
+      if (mutedUsers.includes(userIdToMute)) {
+        await supabase.from('user_mutes').delete().eq('muter_id', currentUser.id).eq('muted_id', userIdToMute);
+        setMutedUsers(prev => prev.filter(id => id !== userIdToMute));
+        triggerToast(isAr ? 'تم إلغاء الكتم' : 'User unmuted');
+      } else {
+        await supabase.from('user_mutes').insert({ muter_id: currentUser.id, muted_id: userIdToMute });
+        setMutedUsers(prev => [...prev, userIdToMute]);
+        triggerToast(isAr ? 'تم كتم إشعارات المستخدم' : 'User muted');
+      }
+    } catch (e) {
+      console.error(e);
+      triggerToast(isAr ? 'حدث خطأ' : 'An error occurred');
+    }
+  };
+
+  const handleSubmitReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeThreadId || !currentUser) return;
+    
+    const thread = threads.find(t => t.id === activeThreadId);
+    if (!thread) return;
+
+    try {
+      await supabase.from('user_reports').insert({
+        reporter_id: currentUser.id,
+        reported_id: thread.other_user_id,
+        reason: reportReason,
+        details: reportDetails
+      });
+      triggerToast(isAr ? 'تم إرسال البلاغ للإدارة بنجاح' : 'Report sent successfully');
+      setReportModalOpen(false);
+      setReportDetails('');
+    } catch (e) {
+      console.error(e);
+      triggerToast(isAr ? 'فشل إرسال البلاغ' : 'Failed to send report');
     }
   };
 
@@ -1575,6 +1624,64 @@ export default function DashboardPage() {
                   className="w-1/2 bg-deumah-green-700 hover:bg-deumah-green-600 text-white py-2.5 rounded font-bold transition shadow-xs cursor-pointer"
                 >
                   ✓ {isAr ? 'حفظ التعديلات' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {reportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-deumah max-w-md w-full p-6 shadow-deumah-search space-y-4 animate-slide-in">
+            <div className="flex justify-between items-center pb-3 border-b border-deumah-gray-100">
+              <h3 className="font-extrabold text-red-600 text-base font-heading flex items-center gap-2">
+                ⚠️ {isAr ? 'إبلاغ عن المستخدم' : 'Report User'}
+              </h3>
+              <button onClick={() => setReportModalOpen(false)} className="text-deumah-gray-400 hover:text-deumah-navy-950 font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReport} className="space-y-4 text-xs font-bold">
+              <div>
+                <label className="block text-deumah-gray-600 mb-2">{isAr ? 'سبب البلاغ' : 'Reason for report'}</label>
+                <select
+                  value={reportReason}
+                  onChange={e => setReportReason(e.target.value)}
+                  className="w-full border border-deumah-gray-200 rounded p-2.5 outline-none focus:border-red-600 bg-white"
+                >
+                  <option value="spam">{isAr ? 'بريد مزعج / سبام' : 'Spam / Unwanted'}</option>
+                  <option value="harassment">{isAr ? 'مضايقة أو إساءة' : 'Harassment or Abuse'}</option>
+                  <option value="scam">{isAr ? 'احتيال أو نصب' : 'Scam or Fraud'}</option>
+                  <option value="inappropriate">{isAr ? 'محتوى غير لائق' : 'Inappropriate Content'}</option>
+                  <option value="other">{isAr ? 'سبب آخر' : 'Other'}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-deumah-gray-600 mb-2">{isAr ? 'تفاصيل إضافية (اختياري)' : 'Additional Details (Optional)'}</label>
+                <textarea
+                  value={reportDetails}
+                  onChange={e => setReportDetails(e.target.value)}
+                  placeholder={isAr ? 'يرجى تقديم مزيد من التفاصيل لمساعدتنا...' : 'Please provide more details to help us...'}
+                  className="w-full border border-deumah-gray-200 rounded p-2.5 outline-none focus:border-red-600 resize-none h-24"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(false)}
+                  className="w-1/2 border border-deumah-gray-200 py-2.5 rounded font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition cursor-pointer"
+                >
+                  {isAr ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded font-bold transition shadow-xs cursor-pointer"
+                >
+                  {isAr ? 'إرسال البلاغ' : 'Submit Report'}
                 </button>
               </div>
             </form>

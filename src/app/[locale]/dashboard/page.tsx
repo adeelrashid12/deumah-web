@@ -123,6 +123,8 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
+  const [blockedByUsers, setBlockedByUsers] = useState<string[]>([]);
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -187,6 +189,12 @@ export default function DashboardPage() {
 
         setCurrentUser(user);
         setEmail(user.email || '');
+
+        // 0. Fetch blocks
+        const { data: myBlocks } = await supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id);
+        if (myBlocks) setBlockedUsers(myBlocks.map(b => b.blocked_id));
+        const { data: blockedMe } = await supabase.from('user_blocks').select('blocker_id').eq('blocked_id', user.id);
+        if (blockedMe) setBlockedByUsers(blockedMe.map(b => b.blocker_id));
 
         // 1. Fetch user profile settings from public.profiles
         const { data: profile } = await supabase
@@ -354,12 +362,38 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const handleToggleBlock = async (userIdToBlock: string) => {
+    try {
+      if (blockedUsers.includes(userIdToBlock)) {
+        await supabase.from('user_blocks').delete().eq('blocker_id', currentUser.id).eq('blocked_id', userIdToBlock);
+        setBlockedUsers(prev => prev.filter(id => id !== userIdToBlock));
+        triggerToast(isAr ? 'تم إلغاء الحظر' : 'User unblocked');
+      } else {
+        await supabase.from('user_blocks').insert({ blocker_id: currentUser.id, blocked_id: userIdToBlock });
+        setBlockedUsers(prev => [...prev, userIdToBlock]);
+        triggerToast(isAr ? 'تم حظر المستخدم' : 'User blocked');
+      }
+    } catch (e) {
+      console.error(e);
+      triggerToast(isAr ? 'حدث خطأ' : 'An error occurred');
+    }
+  };
+
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeThreadId || !replyText.trim() || !currentUser) return;
 
     const thread = threads.find(t => t.id === activeThreadId);
     if (!thread) return;
+
+    if (blockedUsers.includes(thread.other_user_id)) {
+      triggerToast(isAr ? 'لقد قمت بحظر هذا المستخدم.' : 'You have blocked this user.');
+      return;
+    }
+    if (blockedByUsers.includes(thread.other_user_id)) {
+      triggerToast(isAr ? 'لا يمكنك إرسال رسائل لهذا المستخدم.' : 'You cannot send messages to this user.');
+      return;
+    }
 
     try {
       const { data, error } = await supabase.from('messages').insert({
@@ -938,9 +972,18 @@ export default function DashboardPage() {
                                   <span className="w-1.5 h-1.5 rounded-full bg-deumah-green-500 animate-pulse"></span>
                                   {threads.find(t => t.id === activeThreadId)?.listing_title}
                                 </p>
+                                </div>
                               </div>
+                              <button
+                                onClick={() => {
+                                  const id = threads.find(t => t.id === activeThreadId)?.other_user_id;
+                                  if (id) handleToggleBlock(id);
+                                }}
+                                className="text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-deumah-sm hover:bg-red-50 transition cursor-pointer flex items-center gap-1 font-bold"
+                              >
+                                🚫 {blockedUsers.includes(threads.find(t => t.id === activeThreadId)?.other_user_id || '') ? (isAr ? 'إلغاء الحظر' : 'Unblock') : (isAr ? 'حظر' : 'Block User')}
+                              </button>
                             </div>
-                          </div>
                         )}
 
                         {/* Chat Messages */}
@@ -979,37 +1022,49 @@ export default function DashboardPage() {
                         
                         {/* Chat Input */}
                         <div className="bg-white p-3 sm:p-4 border-t border-deumah-gray-200 shrink-0">
-                          <form onSubmit={handleSendReply} className="flex items-end gap-2 sm:gap-3 max-w-4xl mx-auto">
-                            <div className="flex-1 bg-deumah-gray-50 border border-deumah-gray-200 rounded-xl flex items-end p-1 shadow-inner focus-within:ring-2 focus-within:ring-deumah-green-600/20 focus-within:border-deumah-green-600 transition-all">
-                              <textarea 
-                                value={replyText}
-                                onChange={e => setReplyText(e.target.value)}
-                                placeholder={isAr ? 'اكتب رسالة هنا...' : 'Type a message...'} 
-                                className="w-full text-sm bg-transparent border-none outline-none resize-none px-3 py-2.5 max-h-32 min-h-[44px]"
-                                rows={1}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSendReply(e as any);
-                                  }
-                                }}
-                              />
+                          {blockedUsers.includes(threads.find(t => t.id === activeThreadId)?.other_user_id || '') ? (
+                            <div className="text-center p-4 bg-red-50 text-red-600 rounded-xl text-sm font-bold border border-red-100">
+                              🚫 {isAr ? 'لقد قمت بحظر هذا المستخدم. لا يمكنك إرسال رسائل إليه.' : 'You have blocked this user. Unblock to send messages.'}
                             </div>
-                            <button 
-                              type="submit"
-                              disabled={!replyText.trim()}
-                              className="w-[44px] h-[44px] sm:w-[52px] sm:h-[52px] bg-deumah-green-700 text-white rounded-xl flex items-center justify-center hover:bg-deumah-green-600 transition disabled:opacity-40 disabled:hover:bg-deumah-green-700 shadow-md shrink-0 cursor-pointer"
-                            >
-                              <svg className="w-5 h-5 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                              </svg>
-                            </button>
-                          </form>
-                          <div className="text-center mt-2 hidden sm:block">
-                            <p className="text-[10px] text-deumah-gray-400 font-medium">
-                              {isAr ? 'اضغط Enter للإرسال' : 'Press Enter to send'}
-                            </p>
-                          </div>
+                          ) : blockedByUsers.includes(threads.find(t => t.id === activeThreadId)?.other_user_id || '') ? (
+                            <div className="text-center p-4 bg-gray-50 text-gray-600 rounded-xl text-sm font-bold border border-gray-200">
+                              🔒 {isAr ? 'لا يمكنك إرسال رسائل لهذا المستخدم.' : 'You cannot send messages to this user.'}
+                            </div>
+                          ) : (
+                            <>
+                              <form onSubmit={handleSendReply} className="flex items-end gap-2 sm:gap-3 max-w-4xl mx-auto">
+                                <div className="flex-1 bg-deumah-gray-50 border border-deumah-gray-200 rounded-xl flex items-end p-1 shadow-inner focus-within:ring-2 focus-within:ring-deumah-green-600/20 focus-within:border-deumah-green-600 transition-all">
+                                  <textarea 
+                                    value={replyText}
+                                    onChange={e => setReplyText(e.target.value)}
+                                    placeholder={isAr ? 'اكتب رسالة هنا...' : 'Type a message...'} 
+                                    className="w-full text-sm bg-transparent border-none outline-none resize-none px-3 py-2.5 max-h-32 min-h-[44px]"
+                                    rows={1}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendReply(e as any);
+                                      }
+                                    }}
+                                  />
+                                </div>
+                                <button 
+                                  type="submit"
+                                  disabled={!replyText.trim()}
+                                  className="w-[44px] h-[44px] sm:w-[52px] sm:h-[52px] bg-deumah-green-700 text-white rounded-xl flex items-center justify-center hover:bg-deumah-green-600 transition disabled:opacity-40 disabled:hover:bg-deumah-green-700 shadow-md shrink-0 cursor-pointer"
+                                >
+                                  <svg className="w-5 h-5 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                  </svg>
+                                </button>
+                              </form>
+                              <div className="text-center mt-2 hidden sm:block">
+                                <p className="text-[10px] text-deumah-gray-400 font-medium">
+                                  {isAr ? 'اضغط Enter للإرسال' : 'Press Enter to send'}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </>
                     )}

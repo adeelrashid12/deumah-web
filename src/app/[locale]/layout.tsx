@@ -28,8 +28,8 @@ export default async function LocaleLayout({children, params}: Readonly<{childre
   const messages = await getMessages();
 
   return (
-    <html lang={locale} dir={dir} className={`${poppins.className} h-full antialiased overflow-x-hidden`}>
-      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] overflow-x-hidden">
+    <html lang={locale} dir={dir} className={`${poppins.className} h-full antialiased overflow-x-hidden`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] overflow-x-hidden" suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
       </body>
     </html>

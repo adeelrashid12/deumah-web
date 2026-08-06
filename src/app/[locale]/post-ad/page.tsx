@@ -36,6 +36,8 @@ export default function PostAdPage() {
   const [contactCall, setContactCall] = useState(true);
   const [contactChat, setContactChat] = useState(true);
   const [contactWhatsApp, setContactWhatsApp] = useState(false);
+  const [contactPhoneNum, setContactPhoneNum] = useState('');
+  const [contactWhatsAppNum, setContactWhatsAppNum] = useState('');
 
   // Category Specific States
   // 1. Cars
@@ -301,6 +303,14 @@ export default function PostAdPage() {
       } else if (category === 'services') {
         specs = { type: serviceType, area: serviceArea, pricingMethod: servicePricing };
       }
+
+      specs.contact = {
+        call: contactCall,
+        chat: contactChat,
+        whatsapp: contactWhatsApp,
+        phoneNumber: contactPhoneNum,
+        whatsappNumber: contactWhatsAppNum
+      };
 
       const imageUrls = photosList.map(p => p.url);
 
@@ -1009,7 +1019,7 @@ export default function PostAdPage() {
                 </label>
                 <select
                   value={currency}
-                  onChange={e => setCurrency(e.target.value)}
+                  onChange={e => setCurrency(e.target.value as any)}
                   className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-semibold"
                 >
                   <option value="USD">USD ($)</option>
@@ -1142,6 +1152,40 @@ export default function PostAdPage() {
                 <span>{isAr ? 'رسائل واتساب' : 'WhatsApp Message'}</span>
               </label>
             </div>
+            
+            {/* Conditional Phone Inputs */}
+            {(contactCall || contactWhatsApp) && (
+              <div className="grid gap-4 sm:grid-cols-2 mt-4 pt-4 border-t border-deumah-gray-100">
+                {contactCall && (
+                  <div>
+                    <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'رقم الاتصال المباشر' : 'Direct Call Number'}
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder={isAr ? 'مثال: 777123456' : 'e.g. 777123456'}
+                      value={contactPhoneNum}
+                      onChange={e => setContactPhoneNum(e.target.value)}
+                      className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-3 outline-none focus:border-deumah-green-600"
+                    />
+                  </div>
+                )}
+                {contactWhatsApp && (
+                  <div>
+                    <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'رقم الواتساب' : 'WhatsApp Number'}
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder={isAr ? 'مثال: 967777123456' : 'e.g. 967777123456'}
+                      value={contactWhatsAppNum}
+                      onChange={e => setContactWhatsAppNum(e.target.value)}
+                      className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-3 outline-none focus:border-deumah-green-600"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Terms & Agreement Checkbox */}

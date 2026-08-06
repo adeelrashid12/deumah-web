@@ -139,6 +139,7 @@ function SearchResultsPage() {
         const { data, error } = await supabase
           .from('listings')
           .select('*')
+          .in('status', ['approved', 'active'])
           .order('created_at', { ascending: false });
 
         if (data) {

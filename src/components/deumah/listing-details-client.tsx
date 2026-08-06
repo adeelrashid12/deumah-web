@@ -1,4 +1,5 @@
 'use client';
+'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
@@ -6,6 +7,11 @@ import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { Link } from '@/i18n/navigation';
 import { supabase } from '@/lib/supabase';
+import Lightbox from "yet-another-react-lightbox";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import Counter from "yet-another-react-lightbox/plugins/counter";
+import "yet-another-react-lightbox/styles.css";
+import "yet-another-react-lightbox/plugins/counter.css";
 
 import { ListingItem } from '@/data/listings';
 
@@ -32,12 +38,70 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
   const [messageText, setMessageText] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showChatForm, setShowChatForm] = useState(false);
+
+  // Offer Form State
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerAmount, setOfferAmount] = useState(item.price.toString());
+  const [offerMessage, setOfferMessage] = useState('');
+  const [offerToast, setOfferToast] = useState(false);
+
+  const contact = (item.owner as any)?.contact || { chat: true };
+
+  const [isSaved, setIsSaved] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setCurrentUser(user);
+    let active = true;
+
+    // Increment Views
+    supabase.rpc('increment_listing_views', { listing_id: item.id }).then(({ error }) => {
+      if (error) console.error(error);
     });
-  }, []);
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (active && user) {
+        setCurrentUser(user);
+        
+        // Check if saved
+        supabase
+          .from('favorites')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('listing_id', item.id)
+          .single()
+          .then(({ data }) => {
+            if (data && active) setIsSaved(true);
+          });
+      }
+    });
+
+    return () => { active = false; };
+  }, [item.id]);
+
+  const handleToggleSave = async () => {
+    if (!currentUser) return alert(isAr ? 'يرجى تسجيل الدخول' : 'Please log in first');
+    try {
+      if (isSaved) {
+        setIsSaved(false);
+        const { error } = await supabase.from('favorites').delete().eq('user_id', currentUser.id).eq('listing_id', item.id);
+        if (error) {
+          setIsSaved(true);
+          throw error;
+        }
+      } else {
+        setIsSaved(true);
+        const { error } = await supabase.from('favorites').insert({ user_id: currentUser.id, listing_id: item.id });
+        if (error) {
+          setIsSaved(false);
+          throw error;
+        }
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || 'Error saving listing');
+    }
+  };
 
   const isOwner = currentUser && (currentUser.id === (item as any).ownerId || currentUser.id === (item as any).owner_id);
 
@@ -64,20 +128,55 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
     try {
       if (currentUser) {
-        await supabase.from('messages').insert({
+        const { error } = await supabase.from('messages').insert({
           listing_id: item.id,
           sender_id: currentUser.id,
           receiver_id: (item as any).owner_id || (item as any).ownerId || null,
-          message_text: messageText
+          message: messageText
         });
+
+        if (error) {
+          alert(`Database Error: ${error.message}`);
+          throw error;
+        }
       }
     } catch (err) {
       console.error('Message error:', err);
+      return; // Stop here if there's an error
     }
     
     setShowToast(true);
     setMessageText('');
     setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const handleMakeOffer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(offerAmount);
+    if (!amount || amount <= 0) return;
+
+    if (!currentUser) {
+      alert(isAr ? 'يجب تسجيل الدخول لتقديم عرض' : 'You must be logged in to make an offer');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('offers').insert({
+        listing_id: item.id,
+        buyer_id: currentUser.id,
+        seller_id: (item as any).owner_id || (item as any).ownerId,
+        amount: amount,
+        message: offerMessage
+      });
+
+      if (error) throw error;
+      
+      setOfferToast(true);
+      setShowOfferModal(false);
+      setTimeout(() => setOfferToast(false), 3000);
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
   };
 
   return (
@@ -87,7 +186,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         
         {/* Navigation Breadcrumb */}
-        <div className="mb-4">
+        <div className="mb-4 flex justify-between items-center">
           <Link 
             href="/listings" 
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-deumah-green-700 hover:text-deumah-green-600 transition"
@@ -97,6 +196,17 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
             </svg>
             {t('back')}
           </Link>
+
+          <button 
+            onClick={handleToggleSave}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition font-bold text-sm shadow-sm ${
+              isSaved 
+                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
+                : 'bg-white text-deumah-gray-500 border-deumah-gray-200 hover:bg-deumah-gray-50'
+            }`}
+          >
+            {isSaved ? '❤️' : '🤍'} {isSaved ? (isAr ? 'تم الحفظ' : 'Saved') : (isAr ? 'حفظ' : 'Save')}
+          </button>
         </div>
 
         {/* Dynamic Grid Layout */}
@@ -114,7 +224,8 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                   <img
                     src={item.images[activePhotoIdx]}
                     alt={isAr ? item.titleAr : item.titleEn}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition"
+                    onClick={() => setIsGalleryOpen(true)}
                   />
                 ) : (
                   item.video && (
@@ -344,7 +455,10 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                     {isAr ? `${toArabicNumerals(item.price)} دولار` : `$${item.price}`}
                   </div>
                 </div>
-                <button className="w-full bg-deumah-green-700 text-white hover:bg-deumah-green-600 py-3 rounded-deumah-sm font-bold text-sm text-center transition shadow-sm">
+                <button 
+                  onClick={() => setShowOfferModal(true)}
+                  className="w-full bg-deumah-green-700 text-white hover:bg-deumah-green-600 py-3 rounded-deumah-sm font-bold text-sm text-center transition shadow-sm cursor-pointer"
+                >
                   {isAr ? 'طلب شراء فوري' : 'Submit Buying Offer'}
                 </button>
               </div>
@@ -406,22 +520,58 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                   </Link>
                 </div>
               ) : (
-                <form onSubmit={handleSendMessage} className="space-y-3">
-                  <textarea
-                    value={messageText}
-                    onChange={e => setMessageText(e.target.value)}
-                    placeholder={t('messagePlaceholder')}
-                    rows={3}
-                    className="w-full text-xs border border-deumah-gray-200 rounded-deumah-sm p-3 outline-none focus:border-deumah-green-600 bg-transparent transition resize-none"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="w-full bg-deumah-navy-950 text-white hover:bg-deumah-navy-900 py-2.5 rounded-deumah-sm font-bold text-xs transition cursor-pointer"
-                  >
-                    ✉️ {t('sendMessage')}
-                  </button>
-                </form>
+                <div className="space-y-3">
+                  {contact.whatsapp && (
+                    <a 
+                      href={`https://wa.me/${(contact.whatsappNumber || '').replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#128C7E] py-2.5 rounded-deumah-sm font-bold text-xs transition shadow-sm"
+                    >
+                      💬 {isAr ? 'تواصل عبر واتساب' : 'WhatsApp Message'}
+                    </a>
+                  )}
+                  
+                  {contact.call && (
+                    <a 
+                      href={`tel:${contact.phoneNumber || ''}`}
+                      className="w-full flex items-center justify-center gap-2 bg-deumah-navy-950 text-white hover:bg-deumah-navy-900 py-2.5 rounded-deumah-sm font-bold text-xs transition shadow-sm"
+                    >
+                      📞 {isAr ? 'اتصال مباشر' : 'Direct Call'}
+                    </a>
+                  )}
+
+                  {contact.chat && (
+                    <>
+                      {(!contact.whatsapp && !contact.call) || showChatForm ? (
+                        <form onSubmit={handleSendMessage} className="space-y-3 animate-fade-in mt-2 border-t border-deumah-gray-100 pt-3">
+                          <textarea
+                            value={messageText}
+                            onChange={e => setMessageText(e.target.value)}
+                            placeholder={t('messagePlaceholder')}
+                            rows={3}
+                            className="w-full text-xs border border-deumah-gray-200 rounded-deumah-sm p-3 outline-none focus:border-deumah-green-600 bg-transparent transition resize-none"
+                            required
+                          />
+                          <button
+                            type="submit"
+                            className="w-full bg-deumah-navy-950 text-white hover:bg-deumah-navy-900 py-2.5 rounded-deumah-sm font-bold text-xs transition cursor-pointer"
+                          >
+                            ✉️ {t('sendMessage')}
+                          </button>
+                        </form>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowChatForm(true)}
+                          className="w-full flex items-center justify-center gap-2 bg-deumah-gray-100 text-deumah-navy-950 hover:bg-deumah-gray-200 py-2.5 rounded-deumah-sm font-bold text-xs transition"
+                        >
+                          ✉️ {isAr ? 'رسالة عبر المنصة' : 'Deumah Chat'}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
             </div>
 
@@ -440,6 +590,78 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
       )}
 
       <Footer />
+
+      {/* Offer Modal */}
+      {showOfferModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-4 border-b border-deumah-gray-100 bg-deumah-gray-50 flex justify-between items-center">
+              <h3 className="font-extrabold text-deumah-navy-950 text-lg">
+                {isAr ? 'تقديم عرض شراء' : 'Make an Offer'}
+              </h3>
+              <button 
+                onClick={() => setShowOfferModal(false)}
+                className="text-deumah-gray-400 hover:text-deumah-navy-950 transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleMakeOffer} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-deumah-gray-500 uppercase mb-1">
+                  {isAr ? 'مبلغ العرض ($)' : 'Offer Amount ($)'}
+                </label>
+                <input 
+                  type="number" 
+                  value={offerAmount}
+                  onChange={e => setOfferAmount(e.target.value)}
+                  className="w-full border-2 border-deumah-gray-200 rounded-deumah-sm px-4 py-3 text-lg font-bold text-deumah-navy-950 focus:border-deumah-green-500 focus:outline-none transition"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-deumah-gray-500 uppercase mb-1">
+                  {isAr ? 'رسالة (اختياري)' : 'Message (Optional)'}
+                </label>
+                <textarea 
+                  value={offerMessage}
+                  onChange={e => setOfferMessage(e.target.value)}
+                  placeholder={isAr ? 'اكتب رسالة للبائع...' : 'Write a message to the seller...'}
+                  className="w-full border-2 border-deumah-gray-200 rounded-deumah-sm px-4 py-3 text-sm text-deumah-navy-950 focus:border-deumah-green-500 focus:outline-none transition min-h-[100px]"
+                ></textarea>
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full bg-deumah-green-700 text-white font-bold py-3 rounded-deumah-sm hover:bg-deumah-green-600 transition shadow-sm mt-2 cursor-pointer"
+              >
+                {isAr ? 'تأكيد العرض' : 'Submit Offer'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Offer Toast */}
+      {offerToast && (
+        <div className="fixed bottom-4 right-4 bg-deumah-green-700 text-white px-6 py-3 rounded-deumah-sm font-bold shadow-xl animate-fade-in z-50">
+          {isAr ? '✅ تم إرسال العرض بنجاح!' : '✅ Offer submitted successfully!'}
+        </div>
+      )}
+
+      {/* Full Screen Image Gallery */}
+      <Lightbox
+        open={isGalleryOpen}
+        close={() => setIsGalleryOpen(false)}
+        index={activePhotoIdx}
+        slides={item.images.map(src => ({ src }))}
+        plugins={[Zoom, Counter]}
+        on={{
+          view: ({ index }) => setActivePhotoIdx(index)
+        }}
+      />
     </div>
   );
 }

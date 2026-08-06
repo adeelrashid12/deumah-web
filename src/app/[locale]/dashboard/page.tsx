@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
@@ -13,10 +14,43 @@ interface ListingItem {
   titleAr: string;
   price: string;
   category: string;
-  type: 'sale' | 'rent';
+  type: 'sell' | 'rent';
   status: 'active' | 'paused' | 'sold' | 'rented' | 'approved' | 'pending' | 'rejected';
   views: number;
   favorites: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  created_at: string;
+  listing_id: string;
+  sender_id: string;
+  receiver_id: string;
+  message: string;
+}
+
+export interface ChatThread {
+  id: string;
+  listing_id: string;
+  listing_title: string;
+  other_user_id: string;
+  other_user_name: string;
+  messages: ChatMessage[];
+  last_message: ChatMessage;
+}
+
+export interface OfferItem {
+  id: string;
+  listing_id: string;
+  listing_title?: string;
+  buyer_id: string;
+  seller_id: string;
+  amount: number;
+  message: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  buyer_name?: string;
+  seller_name?: string;
 }
 
 export default function DashboardPage() {
@@ -53,11 +87,53 @@ export default function DashboardPage() {
     return `${num.toLocaleString('en-US')} ${curr}`;
   };
 
-  // Tabs navigation state: My Listings, Messages, Saved Listings, Profile, Settings
-  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'saved' | 'profile' | 'settings'>('listings');
+  // Tabs navigation state
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'offers' | 'saved' | 'support' | 'profile' | 'settings'>('listings');
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['listings', 'messages', 'offers', 'saved', 'profile', 'settings'].includes(tab)) {
+      setActiveTab(tab as any);
+    }
+  }, [searchParams]);
+
+  // Offers State
+  const [offersList, setOffersList] = useState<OfferItem[]>([]);
 
   // Listings State
   const [listingsList, setListingsList] = useState<ListingItem[]>([]);
+  const [savedListings, setSavedListings] = useState<any[]>([]);
+
+  // Messaging State
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Support Tickets State
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [activeTicket, setActiveTicket] = useState<any | null>(null);
+  const [ticketMessages, setTicketMessages] = useState<any[]>([]);
+  const [newTicketSubject, setNewTicketSubject] = useState('');
+  const [newTicketMessage, setNewTicketMessage] = useState('');
+  const [ticketReply, setTicketReply] = useState('');
+
+  useEffect(() => {
+    if (activeThreadId && currentUser && threads.length > 0) {
+      const thread = threads.find(t => t.id === activeThreadId);
+      if (thread) {
+        supabase
+          .from('messages')
+          .update({ read: true })
+          .eq('listing_id', thread.listing_id)
+          .eq('receiver_id', currentUser.id)
+          .eq('sender_id', thread.other_user_id)
+          .eq('read', false)
+          .then();
+      }
+    }
+  }, [activeThreadId, currentUser, threads]);
 
   // Profile Details State
   const [fullName, setFullName] = useState('');
@@ -86,6 +162,7 @@ export default function DashboardPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
+        setCurrentUser(user);
         setEmail(user.email || '');
 
         // 1. Fetch user profile settings from public.profiles
@@ -121,12 +198,139 @@ export default function DashboardPage() {
             favorites: item.favorites || 0
           })));
         }
+
+        // 3. Fetch messages and group into threads
+        const { data: sentMessages } = await supabase.from('messages').select('*').eq('sender_id', user.id);
+        const { data: receivedMessages } = await supabase.from('messages').select('*').eq('receiver_id', user.id);
+        
+        const allMessages = [...(sentMessages || []), ...(receivedMessages || [])]
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        
+        const threadMap = new Map<string, ChatThread>();
+        
+        for (const msg of allMessages) {
+          const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+          if (!otherUserId) continue;
+          
+          const threadId = `${msg.listing_id}_${otherUserId}`;
+          
+          if (!threadMap.has(threadId)) {
+            const { data: listingData } = await supabase.from('listings').select('title_en, title_ar').eq('id', msg.listing_id).maybeSingle();
+            const { data: profileData } = await supabase.from('profiles').select('full_name, email').eq('id', otherUserId).maybeSingle();
+            
+            threadMap.set(threadId, {
+              id: threadId,
+              listing_id: msg.listing_id,
+              listing_title: listingData ? (isAr ? listingData.title_ar : listingData.title_en) : 'Ad',
+              other_user_id: otherUserId,
+              other_user_name: profileData ? (profileData.full_name || profileData.email.split('@')[0]) : 'User',
+              messages: [],
+              last_message: msg
+            });
+          }
+          
+          const thread = threadMap.get(threadId)!;
+          thread.messages.push(msg);
+          thread.last_message = msg;
+        }
+        
+        const threadArray = Array.from(threadMap.values())
+          .sort((a, b) => new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime());
+        
+        setThreads(threadArray);
+
+        // 4. Fetch Offers
+        const { data: offersData } = await supabase
+          .from('offers')
+          .select('*')
+          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+          .order('created_at', { ascending: false });
+
+        if (offersData && offersData.length > 0) {
+          const processedOffers = [];
+          for (const off of offersData) {
+            const { data: listingData } = await supabase.from('listings').select('title_en, title_ar').eq('id', off.listing_id).maybeSingle();
+            const otherUserId = off.buyer_id === user.id ? off.seller_id : off.buyer_id;
+            const { data: profileData } = await supabase.from('profiles').select('full_name, email').eq('id', otherUserId).maybeSingle();
+            
+            processedOffers.push({
+              ...off,
+              listing_title: listingData ? (isAr ? listingData.title_ar : listingData.title_en) : 'Ad',
+              buyer_name: off.buyer_id === user.id ? (isAr ? 'أنت' : 'You') : (profileData ? (profileData.full_name || profileData.email.split('@')[0]) : 'Buyer'),
+              seller_name: off.seller_id === user.id ? (isAr ? 'أنت' : 'You') : (profileData ? (profileData.full_name || profileData.email.split('@')[0]) : 'Seller')
+            });
+          }
+          setOffersList(processedOffers);
+        }
+
+        // 5. Fetch Favorites
+        const { data: favData } = await supabase
+          .from('favorites')
+          .select('listing_id, listings(id, title_en, title_ar, price, currency, images, type)')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (favData) {
+          setSavedListings(favData.map(f => ({
+            id: f.listing_id,
+            titleEn: (f.listings as any).title_en,
+            titleAr: (f.listings as any).title_ar,
+            price: `${(f.listings as any).price} ${(f.listings as any).currency || 'USD'}`,
+            image: ((f.listings as any).images && (f.listings as any).images.length > 0) ? (f.listings as any).images[0] : 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&auto=format&fit=crop&q=80',
+            type: (f.listings as any).type
+          })));
+        }
+
+        // 6. Fetch Support Tickets
+        const { data: ticketsData } = await supabase
+          .from('support_tickets')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false });
+        if (ticketsData) setTickets(ticketsData);
+        
       } catch (e) {
         console.error(e);
       }
     }
     loadDashboardData();
   }, []);
+
+  const handleSendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeThreadId || !replyText.trim() || !currentUser) return;
+
+    const thread = threads.find(t => t.id === activeThreadId);
+    if (!thread) return;
+
+    try {
+      const { data, error } = await supabase.from('messages').insert({
+        listing_id: thread.listing_id,
+        sender_id: currentUser.id,
+        receiver_id: thread.other_user_id,
+        message: replyText
+      }).select().single();
+
+      if (error) throw error;
+      if (data) {
+        // Optimistically update UI
+        setThreads(prev => prev.map(t => {
+          if (t.id === activeThreadId) {
+            return {
+              ...t,
+              messages: [...t.messages, data as unknown as ChatMessage],
+              last_message: data as unknown as ChatMessage
+            };
+          }
+          return t;
+        }).sort((a, b) => new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime()));
+        setReplyText('');
+      }
+    } catch (e) {
+      console.error(e);
+      triggerToast(isAr ? 'فشل إرسال الرسالة.' : 'Failed to send message.');
+    }
+  };
 
   // Edit Listing Modal State
   const [editingItem, setEditingItem] = useState<ListingItem | null>(null);
@@ -200,8 +404,8 @@ export default function DashboardPage() {
     }
   };
 
-  const handleMarkComplete = async (id: string, type: 'sale' | 'rent') => {
-    const nextStatus = type === 'sale' ? 'sold' : 'rented';
+  const handleMarkComplete = async (id: string, type: 'sell' | 'rent') => {
+    const nextStatus = type === 'sell' ? 'sold' : 'rented';
 
     try {
       const { error } = await supabase
@@ -214,8 +418,8 @@ export default function DashboardPage() {
       setListingsList(prev => prev.map(l => l.id === id ? { ...l, status: nextStatus } : l));
       triggerToast(
         isAr 
-          ? (type === 'sale' ? 'تم تمييز الإعلان كمباع!' : 'تم تمييز الإعلان كمؤجر!') 
-          : (type === 'sale' ? 'Listing marked as Sold!' : 'Listing marked as Rented!')
+          ? (type === 'sell' ? 'تم تمييز الإعلان كمباع!' : 'تم تمييز الإعلان كمؤجر!') 
+          : (type === 'sell' ? 'Listing marked as Sold!' : 'Listing marked as Rented!')
       );
     } catch (err: any) {
       triggerToast(err.message || 'Error occurred');
@@ -311,6 +515,47 @@ export default function DashboardPage() {
     }
   };
 
+  const handleUpdateOfferStatus = async (id: string, newStatus: 'accepted' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('offers')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setOffersList(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+      triggerToast(
+        isAr 
+          ? (newStatus === 'accepted' ? 'تم قبول العرض!' : 'تم رفض العرض!') 
+          : (newStatus === 'accepted' ? 'Offer Accepted!' : 'Offer Rejected!')
+      );
+    } catch (err: any) {
+      triggerToast(err.message || 'Error occurred');
+    }
+  };
+
+  const handleMessageOfferUser = (offer: OfferItem) => {
+    const otherUserId = offer.buyer_id === currentUser?.id ? offer.seller_id : offer.buyer_id;
+    const threadId = `${offer.listing_id}_${otherUserId}`;
+    
+    if (!threads.find(t => t.id === threadId)) {
+      const newThread: ChatThread = {
+        id: threadId,
+        listing_id: offer.listing_id,
+        listing_title: offer.listing_title || 'Ad',
+        other_user_id: otherUserId,
+        other_user_name: offer.buyer_id === currentUser?.id ? (offer.seller_name || 'Seller') : (offer.buyer_name || 'Buyer'),
+        messages: [],
+        last_message: { created_at: new Date().toISOString(), message: '' } as any
+      };
+      setThreads(prev => [newThread, ...prev]);
+    }
+    
+    setActiveTab('messages');
+    setActiveThreadId(threadId);
+  };
+
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -327,10 +572,20 @@ export default function DashboardPage() {
         .eq('id', user.id);
 
       if (error) throw error;
-
-      triggerToast(isAr ? 'تم حفظ بيانات الملف الشخصي بنجاح!' : 'Profile settings saved successfully!');
+      triggerToast(isAr ? 'تم تحديث الملف الشخصي بنجاح!' : 'Profile updated successfully!');
     } catch (err: any) {
-      triggerToast(err.message || 'Error saving profile');
+      triggerToast(err.message || 'Error occurred');
+    }
+  };
+
+  const handleRemoveSavedListing = async (listingId: string) => {
+    if (!currentUser) return;
+    try {
+      setSavedListings(prev => prev.filter(s => s.id !== listingId));
+      await supabase.from('favorites').delete().eq('user_id', currentUser.id).eq('listing_id', listingId);
+      triggerToast(isAr ? 'تم إزالة الإعلان من المحفوظات' : 'Listing removed from saved items');
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -366,8 +621,8 @@ export default function DashboardPage() {
             { label: isAr ? 'الإعلانات النشطة' : 'Active Listings', value: listingsList.filter(l => l.status === 'active').length, icon: '🚗' },
             { label: isAr ? 'المشاهدات' : 'Total Views', value: listingsList.reduce((acc, l) => acc + l.views, 0), icon: '👁️' },
             { label: isAr ? 'المفضلة' : 'Favorites', value: listingsList.reduce((acc, l) => acc + l.favorites, 0), icon: '⭐' },
-            { label: isAr ? 'الرسائل الواردة' : 'Inbox Messages', value: 4, icon: '💬' },
-            { label: isAr ? 'طلبات معلقة' : 'Pending Requests', value: 1, icon: '⏳' }
+            { label: isAr ? 'الرسائل الواردة' : 'Inbox Messages', value: threads.length, icon: '💬' },
+            { label: isAr ? 'طلبات معلقة' : 'Pending Requests', value: listingsList.filter(l => l.status === 'pending').length, icon: '⏳' }
           ].map((stat, idx) => (
             <div key={idx} className="bg-white border border-deumah-gray-200 rounded-deumah p-3 flex items-center gap-3 shadow-xs">
               <span className="text-xl shrink-0">{stat.icon}</span>
@@ -389,7 +644,9 @@ export default function DashboardPage() {
             {[
               { id: 'listings', labelEn: '🚗 My Listings', labelAr: '🚗 إعلاناتي' },
               { id: 'messages', labelEn: '💬 Messages', labelAr: '💬 الرسائل' },
+              { id: 'offers', labelEn: '🤝 Offers', labelAr: '🤝 العروض' },
               { id: 'saved', labelEn: '⭐ Saved Listings', labelAr: '⭐ المحفوظات' },
+              { id: 'support', labelEn: '💬 Support Tickets', labelAr: '💬 تذاكر الدعم' },
               { id: 'profile', labelEn: '👤 Profile Info', labelAr: '👤 الملف الشخصي' },
               { id: 'settings', labelEn: '⚙️ App Settings', labelAr: '⚙️ الإعدادات' }
             ].map(tab => (
@@ -434,19 +691,23 @@ export default function DashboardPage() {
                               </h3>
                             </Link>
                             <span className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
-                              item.status === 'active'
+                              item.status === 'active' || item.status === 'approved'
                                 ? 'bg-deumah-green-50 text-deumah-green-700 border-deumah-green-200'
                                 : item.status === 'paused'
                                 ? 'bg-deumah-gray-50 text-deumah-gray-500 border-deumah-gray-200'
+                                : item.status === 'pending'
+                                ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
                                 : 'bg-red-50 text-red-700 border-red-200'
                             }`}>
-                              {item.status === 'active' && (isAr ? 'نشط' : 'Active')}
+                              {(item.status === 'active' || item.status === 'approved') && (isAr ? 'نشط' : 'Active')}
                               {item.status === 'paused' && (isAr ? 'موقوف مؤقتاً' : 'Paused')}
                               {item.status === 'sold' && (isAr ? 'مباع' : 'Sold')}
                               {item.status === 'rented' && (isAr ? 'مؤجر' : 'Rented')}
+                              {item.status === 'pending' && (isAr ? 'قيد المراجعة' : 'Pending Approval')}
+                              {item.status === 'rejected' && (isAr ? 'مرفوض' : 'Rejected')}
                             </span>
                             <span className="text-[9px] font-bold bg-deumah-navy-50 text-deumah-navy-900 px-2 py-0.5 rounded">
-                              {item.type === 'sale' ? (isAr ? 'للبيع' : 'For Sale') : (isAr ? 'للإيجار' : 'For Rent')}
+                              {item.type === 'sell' ? (isAr ? 'للبيع' : 'For Sale') : (isAr ? 'للإيجار' : 'For Rent')}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-[10px] font-semibold text-deumah-gray-400">
@@ -489,7 +750,7 @@ export default function DashboardPage() {
                               onClick={() => handleMarkComplete(item.id, item.type)}
                               className="px-2.5 py-1.5 border border-deumah-green-200 bg-deumah-green-50 text-deumah-green-700 rounded hover:bg-deumah-green-100 cursor-pointer"
                             >
-                              ✓ {item.type === 'sale' ? (isAr ? 'تم البيع' : 'Mark Sold') : (isAr ? 'تم التأجير' : 'Mark Rented')}
+                              ✓ {item.type === 'sell' ? (isAr ? 'تم البيع' : 'Mark Sold') : (isAr ? 'تم التأجير' : 'Mark Rented')}
                             </button>
                           )}
 
@@ -533,46 +794,258 @@ export default function DashboardPage() {
                   {isAr ? 'رسائل ودردشات المشترين' : 'Direct Messages Inbox'}
                 </h2>
                 
-                {/* Mock Chat Layout */}
-                <div className="border border-deumah-gray-200 rounded-deumah h-[320px] grid grid-cols-[200px_1fr] overflow-hidden">
+                {/* Dynamic Chat Layout */}
+                <div className="border border-deumah-gray-200 rounded-2xl h-[600px] grid grid-cols-1 md:grid-cols-[320px_1fr] overflow-hidden shadow-sm bg-white">
                   
                   {/* Left Threads Column */}
-                  <div className="border-r rtl:border-r-0 rtl:border-l border-deumah-gray-200 bg-deumah-gray-50/50 overflow-y-auto divide-y divide-deumah-gray-100">
-                    {[
-                      { user: isAr ? 'صالح محمد' : 'Saleh Mohammed', lastMsg: isAr ? 'هل السيارة متوفرة اليوم؟' : 'Is the car available today?', active: true },
-                      { user: isAr ? 'رائد علي' : 'Raeed Ali', lastMsg: isAr ? 'أريد حجز الصالة الأسبوع القادم' : 'I want to book the hall next week', active: false }
-                    ].map((thread, idx) => (
-                      <div key={idx} className={`p-3 cursor-pointer text-left rtl:text-right transition ${thread.active ? 'bg-white border-l-4 rtl:border-l-0 rtl:border-r-4 border-deumah-green-700' : 'hover:bg-deumah-gray-100'}`}>
-                        <h4 className="text-xs font-extrabold text-deumah-navy-950">{thread.user}</h4>
-                        <p className="text-[10px] text-deumah-gray-400 font-semibold truncate mt-0.5">{thread.lastMsg}</p>
-                      </div>
-                    ))}
+                  <div className={`border-r rtl:border-r-0 rtl:border-l border-deumah-gray-200 bg-deumah-gray-50/30 flex flex-col ${activeThreadId ? 'hidden md:flex' : 'flex'}`}>
+                    <div className="p-4 border-b border-deumah-gray-200 bg-white">
+                      <h3 className="font-extrabold text-deumah-navy-950 text-sm">{isAr ? 'المحادثات' : 'Conversations'}</h3>
+                    </div>
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1 scrollbar-thin">
+                      {threads.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-deumah-gray-400 font-semibold flex flex-col items-center gap-3">
+                          <span className="text-4xl opacity-20">💬</span>
+                          {isAr ? 'لا توجد رسائل بعد.' : 'No messages yet.'}
+                        </div>
+                      ) : (
+                        threads.map(thread => {
+                          const isActive = activeThreadId === thread.id;
+                          return (
+                            <div 
+                              key={thread.id} 
+                              onClick={() => setActiveThreadId(thread.id)}
+                              className={`p-3 cursor-pointer rounded-xl transition-all flex items-start gap-3 ${
+                                isActive 
+                                ? 'bg-white shadow-sm ring-1 ring-deumah-green-600/20' 
+                                : 'hover:bg-deumah-gray-100/50'
+                              }`}
+                            >
+                              <div className="w-10 h-10 rounded-full bg-deumah-navy-50 flex items-center justify-center shrink-0 border border-deumah-navy-100 font-extrabold text-deumah-navy-900 shadow-inner">
+                                {thread.other_user_name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-center mb-0.5">
+                                  <h4 className={`text-xs font-extrabold truncate ${isActive ? 'text-deumah-green-700' : 'text-deumah-navy-950'}`}>
+                                    {thread.other_user_name}
+                                  </h4>
+                                </div>
+                                <p className="text-[10px] text-deumah-gray-500 font-bold truncate mb-1 bg-deumah-gray-100/80 inline-block px-1.5 py-0.5 rounded">
+                                  {thread.listing_title}
+                                </p>
+                                <p className="text-[11px] text-deumah-gray-500 font-medium truncate">
+                                  {thread.last_message.message}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
 
                   {/* Right Chat panel */}
-                  <div className="flex flex-col justify-between p-4 bg-white">
-                    <div className="space-y-3 flex-1 overflow-y-auto">
-                      <div className="bg-deumah-gray-100 p-3 rounded-deumah-sm max-w-[80%] self-start text-[11px] font-semibold text-deumah-gray-700">
-                        {isAr ? 'مرحباً، هل السيارة تويوتا لاندكروزر متوفرة للإيجار غداً؟' : 'Hello, is the Toyota Land Cruiser available for rent tomorrow?'}
+                  <div className={`flex flex-col bg-[#F8F9FA] relative h-[600px] ${!activeThreadId ? 'hidden md:flex' : 'flex'}`}>
+                    {!activeThreadId ? (
+                      <div className="flex flex-col items-center justify-center h-full text-deumah-gray-400 space-y-4">
+                        <div className="w-20 h-20 bg-deumah-gray-100 rounded-full flex items-center justify-center shadow-inner">
+                          <span className="text-3xl opacity-50">✉️</span>
+                        </div>
+                        <p className="text-sm font-bold uppercase tracking-wider">
+                          {isAr ? 'اختر محادثة للبدء' : 'Select a conversation'}
+                        </p>
                       </div>
-                      <div className="bg-deumah-green-50 text-deumah-green-800 p-3 rounded-deumah-sm max-w-[80%] ms-auto text-right text-[11px] font-semibold">
-                        {isAr ? 'نعم أهلاً بك، متوفرة وجاهزة للاستلام.' : 'Yes, welcome! It is available and ready for pickup.'}
-                      </div>
-                    </div>
-                    
-                    {/* Chat inputs */}
-                    <div className="mt-4 flex gap-2 border-t border-deumah-gray-100 pt-3">
-                      <input 
-                        type="text" 
-                        placeholder={isAr ? 'اكتب رسالة هنا...' : 'Type message here...'} 
-                        className="flex-grow text-xs border border-deumah-gray-200 rounded px-3 py-2 outline-none focus:border-deumah-green-600"
-                      />
-                      <button className="bg-deumah-green-700 text-white font-bold text-xs px-4 py-2 rounded cursor-pointer hover:bg-deumah-green-600 transition">
-                        {isAr ? 'إرسال' : 'Send'}
-                      </button>
-                    </div>
-                  </div>
+                    ) : (
+                      <>
+                        {/* Chat Header */}
+                        {threads.find(t => t.id === activeThreadId) && (
+                          <div className="h-16 bg-white border-b border-deumah-gray-200 flex justify-between items-center px-4 sm:px-6 shadow-sm z-10 shrink-0">
+                            <div className="flex items-center gap-3">
+                              <button 
+                                onClick={() => setActiveThreadId(null)}
+                                className="md:hidden w-8 h-8 flex items-center justify-center bg-deumah-gray-100 rounded-full text-deumah-gray-600"
+                              >
+                                <svg className="w-4 h-4 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                                </svg>
+                              </button>
+                              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-deumah-green-600 to-deumah-green-400 flex items-center justify-center font-bold text-white shadow-md ring-2 ring-white">
+                                {threads.find(t => t.id === activeThreadId)?.other_user_name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <h3 className="font-extrabold text-deumah-navy-950 text-sm">
+                                  {threads.find(t => t.id === activeThreadId)?.other_user_name}
+                                </h3>
+                                <p className="text-[10px] text-deumah-green-700 font-bold flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-deumah-green-500 animate-pulse"></span>
+                                  {threads.find(t => t.id === activeThreadId)?.listing_title}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
+                        {/* Chat Messages */}
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-thin">
+                          {threads.find(t => t.id === activeThreadId)?.messages.map((msg, idx, arr) => {
+                            const isMe = msg.sender_id === currentUser?.id;
+                            const showAvatar = !isMe && (idx === 0 || arr[idx - 1].sender_id !== msg.sender_id);
+                            
+                            return (
+                              <div key={msg.id} className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                {!isMe && (
+                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${showAvatar ? 'bg-deumah-navy-100 text-deumah-navy-700 font-bold text-[10px]' : 'bg-transparent'}`}>
+                                    {showAvatar ? threads.find(t => t.id === activeThreadId)?.other_user_name.charAt(0).toUpperCase() : ''}
+                                  </div>
+                                )}
+                                
+                                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%]`}>
+                                  <div 
+                                    className={`px-4 py-2.5 text-[13px] font-medium leading-relaxed shadow-sm ${
+                                      isMe 
+                                        ? 'bg-deumah-green-700 text-white rounded-2xl rounded-br-sm rtl:rounded-br-2xl rtl:rounded-bl-sm' 
+                                        : 'bg-white text-deumah-navy-950 border border-deumah-gray-200 rounded-2xl rounded-bl-sm rtl:rounded-bl-2xl rtl:rounded-br-sm'
+                                    }`}
+                                  >
+                                    <p className="whitespace-pre-wrap">{msg.message}</p>
+                                  </div>
+                                  <span className={`text-[9px] font-bold mt-1.5 text-deumah-gray-400 ${isMe ? 'mr-1 rtl:mr-0 rtl:ml-1' : 'ml-1 rtl:ml-0 rtl:mr-1'}`}>
+                                    {new Date(msg.created_at).toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Chat Input */}
+                        <div className="bg-white p-3 sm:p-4 border-t border-deumah-gray-200 shrink-0">
+                          <form onSubmit={handleSendReply} className="flex items-end gap-2 sm:gap-3 max-w-4xl mx-auto">
+                            <div className="flex-1 bg-deumah-gray-50 border border-deumah-gray-200 rounded-xl flex items-end p-1 shadow-inner focus-within:ring-2 focus-within:ring-deumah-green-600/20 focus-within:border-deumah-green-600 transition-all">
+                              <textarea 
+                                value={replyText}
+                                onChange={e => setReplyText(e.target.value)}
+                                placeholder={isAr ? 'اكتب رسالة هنا...' : 'Type a message...'} 
+                                className="w-full text-sm bg-transparent border-none outline-none resize-none px-3 py-2.5 max-h-32 min-h-[44px]"
+                                rows={1}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendReply(e as any);
+                                  }
+                                }}
+                              />
+                            </div>
+                            <button 
+                              type="submit"
+                              disabled={!replyText.trim()}
+                              className="w-[44px] h-[44px] sm:w-[52px] sm:h-[52px] bg-deumah-green-700 text-white rounded-xl flex items-center justify-center hover:bg-deumah-green-600 transition disabled:opacity-40 disabled:hover:bg-deumah-green-700 shadow-md shrink-0 cursor-pointer"
+                            >
+                              <svg className="w-5 h-5 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                              </svg>
+                            </button>
+                          </form>
+                          <div className="text-center mt-2 hidden sm:block">
+                            <p className="text-[10px] text-deumah-gray-400 font-medium">
+                              {isAr ? 'اضغط Enter للإرسال' : 'Press Enter to send'}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* OFFERS TAB */}
+            {activeTab === 'offers' && (
+              <div className="space-y-4">
+                <h2 className="text-md font-bold text-deumah-navy-950 font-heading">
+                  {isAr ? 'عروض الشراء والتفاوض' : 'Offers & Negotiations'}
+                </h2>
+
+                <div className="border border-deumah-gray-200 rounded-deumah overflow-hidden divide-y divide-deumah-gray-200 bg-[#F8F9FA]">
+                  {offersList.length === 0 ? (
+                    <div className="p-12 text-center flex flex-col items-center">
+                      <span className="text-4xl opacity-20 mb-3 block">🤝</span>
+                      <p className="text-xs text-deumah-gray-400 font-bold uppercase tracking-wider">
+                        {isAr ? 'لا توجد عروض حالياً' : 'No offers available yet'}
+                      </p>
+                    </div>
+                  ) : (
+                    offersList.map(offer => {
+                      const isOutgoing = offer.buyer_id === currentUser?.id;
+                      return (
+                        <div key={offer.id} className="p-4 sm:p-5 bg-white hover:bg-deumah-gray-50 transition flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                offer.status === 'pending' ? 'bg-orange-100 text-orange-700' :
+                                offer.status === 'accepted' ? 'bg-deumah-green-100 text-deumah-green-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {isAr ? (
+                                  offer.status === 'pending' ? 'معلق' : offer.status === 'accepted' ? 'مقبول' : 'مرفوض'
+                                ) : offer.status}
+                              </span>
+                              <span className="text-xs text-deumah-gray-400 font-bold">
+                                {new Date(offer.created_at).toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}
+                              </span>
+                            </div>
+                            
+                            <h3 className="text-sm font-extrabold text-deumah-navy-950">
+                              {offer.listing_title}
+                            </h3>
+                            
+                            <p className="text-xs text-deumah-gray-500 font-medium flex items-center gap-1.5">
+                              {isOutgoing ? (
+                                <><span>↗️</span> {isAr ? 'أنت قدمت عرضاً إلى' : 'You made an offer to'} <span className="font-bold">{offer.seller_name}</span></>
+                              ) : (
+                                <><span>↙️</span> <span className="font-bold">{offer.buyer_name}</span> {isAr ? 'قدم عرضاً' : 'made an offer'}</>
+                              )}
+                            </p>
+
+                            {offer.message && (
+                              <div className="mt-2 text-xs italic text-deumah-gray-600 bg-deumah-gray-100 p-2 rounded-deumah-sm border-l-2 border-deumah-gray-300">
+                                "{offer.message}"
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                            <div className="text-xl font-black text-deumah-green-700">
+                              ${offer.amount.toLocaleString()}
+                            </div>
+                            
+                            {!isOutgoing && offer.status === 'pending' && (
+                              <div className="flex gap-2 w-full sm:w-auto">
+                                <button 
+                                  onClick={() => handleMessageOfferUser(offer)}
+                                  className="flex-1 sm:flex-none bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-deumah-sm text-xs font-bold transition cursor-pointer"
+                                >
+                                  {isAr ? 'رسالة' : 'Message'}
+                                </button>
+                                <button 
+                                  onClick={() => handleUpdateOfferStatus(offer.id, 'accepted')}
+                                  className="flex-1 sm:flex-none bg-deumah-green-700 hover:bg-deumah-green-600 text-white px-4 py-2 rounded-deumah-sm text-xs font-bold transition shadow-sm cursor-pointer"
+                                >
+                                  {isAr ? 'قبول' : 'Accept'}
+                                </button>
+                                <button 
+                                  onClick={() => handleUpdateOfferStatus(offer.id, 'rejected')}
+                                  className="flex-1 sm:flex-none bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-deumah-sm text-xs font-bold transition cursor-pointer"
+                                >
+                                  {isAr ? 'رفض' : 'Reject'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             )}
@@ -585,28 +1058,38 @@ export default function DashboardPage() {
                 </h2>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {[
-                    { id: '10', titleEn: 'Yamaha R6 Motorcycle', titleAr: 'دراجة ياماها R6 نارية', price: '$25/Day', image: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=300&auto=format&fit=crop&q=80' },
-                    { id: '11', titleEn: 'Modern Chalet with Private Pool', titleAr: 'شاليه حديث مع مسبح خاص', price: '$120/Day', image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=300&auto=format&fit=crop&q=80' }
-                  ].map(saved => (
-                    <div key={saved.id} className="border border-deumah-gray-200 rounded-deumah overflow-hidden flex shadow-xs">
-                      <img src={saved.image} alt={saved.titleEn} className="w-20 object-cover" />
-                      <div className="p-3 flex-1 flex flex-col justify-between">
-                        <div>
-                          <h4 className="text-xs font-bold text-deumah-navy-950">{isAr ? saved.titleAr : saved.titleEn}</h4>
-                          <span className="text-[10px] text-deumah-green-700 font-extrabold">{saved.price}</span>
-                        </div>
-                        <div className="flex justify-between items-center mt-2">
-                          <Link href={`/listings/${saved.id}`} className="text-[10px] font-bold text-deumah-green-700 hover:underline">
-                            {isAr ? 'عرض الإعلان' : 'View Ad'}
-                          </Link>
-                          <button className="text-[10px] text-red-600 font-bold hover:underline cursor-pointer">
-                            {isAr ? 'إزالة' : 'Remove'}
-                          </button>
+                  {savedListings.length === 0 ? (
+                    <div className="p-8 text-center text-deumah-gray-400 col-span-2">
+                      {isAr ? 'لا توجد إعلانات محفوظة.' : 'No saved listings yet.'}
+                    </div>
+                  ) : (
+                    savedListings.map(saved => (
+                      <div key={saved.id} className="border border-deumah-gray-200 rounded-deumah overflow-hidden flex shadow-xs bg-white hover:bg-deumah-gray-50 transition">
+                        <img src={saved.image} alt={saved.titleEn} className="w-24 object-cover" />
+                        <div className="p-3 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-extrabold text-deumah-navy-950 text-xs line-clamp-2">
+                              {isAr ? saved.titleAr : saved.titleEn}
+                            </h3>
+                            <p className="text-[11px] font-black text-deumah-green-700 mt-1">
+                              {saved.price}
+                            </p>
+                          </div>
+                          <div className="flex justify-between items-center mt-2">
+                            <Link href={`/listings/${saved.id}`} className="text-[10px] font-bold text-deumah-green-700 hover:underline">
+                              {isAr ? 'عرض الإعلان' : 'View Ad'}
+                            </Link>
+                            <button 
+                              onClick={() => handleRemoveSavedListing(saved.id)}
+                              className="text-[10px] font-bold text-red-500 hover:text-red-700 cursor-pointer transition"
+                            >
+                              {isAr ? 'إزالة' : 'Remove'}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -726,11 +1209,170 @@ export default function DashboardPage() {
               </form>
             )}
 
-          </div>
+            {/* SUPPORT TICKETS TAB */}
+            {activeTab === 'support' && (
+              <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                  <h2 className="text-md font-bold text-deumah-navy-950 font-heading">
+                                    {isAr ? 'تذاكر الدعم الفني' : 'Customer Support Tickets'}
+                                  </h2>
+                                  {activeTicket && (
+                                    <button 
+                                      onClick={() => setActiveTicket(null)}
+                                      className="text-xs font-bold text-deumah-gray-500 hover:text-deumah-navy-950"
+                                    >
+                                      {isAr ? '← العودة للقائمة' : '← Back to List'}
+                                    </button>
+                                  )}
+                                </div>
 
-        </div>
+                                {!activeTicket ? (
+                                  <div className="grid lg:grid-cols-2 gap-6">
+                                    {/* Create Ticket Form */}
+                                    <div className="bg-deumah-gray-50 p-5 rounded-deumah border border-deumah-gray-200 h-fit">
+                                      <h3 className="text-sm font-bold text-deumah-navy-950 mb-4">{isAr ? 'فتح تذكرة جديدة' : 'Open a New Ticket'}</h3>
+                                      <form onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        if (!newTicketSubject.trim() || !newTicketMessage.trim()) return triggerToast(isAr ? 'يرجى ملء جميع الحقول' : 'Please fill all fields');
+                                        
+                                        try {
+                                          const { data: ticket, error: ticketError } = await supabase.from('support_tickets').insert({ user_id: currentUser.id, subject: newTicketSubject }).select().single();
+                                          if (ticketError) throw ticketError;
+                                          
+                                          const { error: msgError } = await supabase.from('ticket_messages').insert({ ticket_id: ticket.id, sender_id: currentUser.id, message: newTicketMessage });
+                                          if (msgError) throw msgError;
+                                          
+                                          setNewTicketSubject('');
+                                          setNewTicketMessage('');
+                                          setTickets([ticket, ...tickets]);
+                                          triggerToast(isAr ? 'تم فتح التذكرة بنجاح' : 'Ticket opened successfully');
+                                        } catch (err: any) {
+                                          triggerToast(err.message);
+                                        }
+                                      }} className="space-y-3">
+                                        <input 
+                                          type="text" 
+                                          placeholder={isAr ? 'الموضوع (مثال: مشكلة في الإعلان)' : 'Subject (e.g. Issue with my ad)'}
+                                          value={newTicketSubject}
+                                          onChange={(e) => setNewTicketSubject(e.target.value)}
+                                          className="w-full border border-deumah-gray-200 rounded p-2.5 outline-none text-xs font-semibold focus:border-deumah-green-700"
+                                          required
+                                        />
+                                        <textarea 
+                                          placeholder={isAr ? 'اشرح مشكلتك بالتفصيل...' : 'Describe your issue in detail...'}
+                                          value={newTicketMessage}
+                                          onChange={(e) => setNewTicketMessage(e.target.value)}
+                                          className="w-full border border-deumah-gray-200 rounded p-2.5 outline-none text-xs h-24 resize-none focus:border-deumah-green-700"
+                                          required
+                                        />
+                                        <button type="submit" className="w-full bg-deumah-navy-950 hover:bg-deumah-navy-900 text-white font-bold text-xs py-2.5 rounded transition">
+                                          {isAr ? 'إرسال التذكرة' : 'Submit Ticket'}
+                                        </button>
+                                      </form>
+                                    </div>
 
-      </main>
+                                    {/* Past Tickets List */}
+                                    <div className="space-y-3">
+                                      <h3 className="text-sm font-bold text-deumah-navy-950 mb-2">{isAr ? 'تذاكري' : 'My Tickets'}</h3>
+                                      {tickets.length === 0 ? (
+                                        <div className="p-8 text-center text-xs text-deumah-gray-400 font-medium border border-dashed border-deumah-gray-300 rounded-deumah">
+                                          {isAr ? 'لا توجد تذاكر دعم سابقة' : 'No past support tickets'}
+                                        </div>
+                                      ) : (
+                                        tickets.map(t => (
+                                          <div 
+                                            key={t.id} 
+                                            onClick={async () => {
+                                              setActiveTicket(t);
+                                              const { data } = await supabase.from('ticket_messages').select('*').eq('ticket_id', t.id).order('created_at', { ascending: true });
+                                              if (data) setTicketMessages(data);
+                                            }}
+                                            className="p-4 border border-deumah-gray-200 rounded-deumah hover:bg-deumah-gray-50 transition cursor-pointer flex justify-between items-center"
+                                          >
+                                            <div>
+                                              <h4 className="text-xs font-extrabold text-deumah-navy-950">{t.subject}</h4>
+                                              <p className="text-[10px] text-deumah-gray-400 mt-1">{new Date(t.created_at).toLocaleDateString()}</p>
+                                            </div>
+                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
+                                              t.status === 'open' ? 'bg-deumah-green-100 text-deumah-green-700' : 
+                                              t.status === 'resolved' ? 'bg-blue-100 text-blue-700' : 'bg-deumah-gray-200 text-deumah-gray-700'
+                                            }`}>
+                                              {t.status}
+                                            </span>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="border border-deumah-gray-200 rounded-deumah flex flex-col h-[500px] overflow-hidden bg-white">
+                                    <div className="bg-deumah-navy-950 p-4 text-white">
+                                      <h3 className="font-bold text-sm">{activeTicket.subject}</h3>
+                                      <span className="text-[10px] text-white/60">Ticket #{activeTicket.id.split('-')[0]}</span>
+                                    </div>
+                                    
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-deumah-gray-50">
+                                      {ticketMessages.map(msg => (
+                                        <div key={msg.id} className={`flex ${msg.is_admin ? 'justify-start' : 'justify-end'}`}>
+                                          <div className={`max-w-[75%] p-3 rounded-lg text-xs shadow-sm ${
+                                            msg.is_admin ? 'bg-white border border-deumah-gray-200 text-deumah-navy-950 rounded-tl-none' : 'bg-deumah-green-700 text-white rounded-tr-none'
+                                          }`}>
+                                            <div className="font-bold mb-1 flex justify-between gap-4">
+                                              <span>{msg.is_admin ? 'Support Team' : 'You'}</span>
+                                              <span className="text-[9px] opacity-70">{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                            <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {activeTicket.status !== 'closed' && (
+                                      <form 
+                                        onSubmit={async (e) => {
+                                          e.preventDefault();
+                                          if (!ticketReply.trim()) return;
+                                          try {
+                                            const { error } = await supabase.from('ticket_messages').insert({ ticket_id: activeTicket.id, sender_id: currentUser.id, message: ticketReply });
+                                            if (error) throw error;
+                                            setTicketReply('');
+                                            
+                                            // Re-fetch messages
+                                            const { data } = await supabase.from('ticket_messages').select('*').eq('ticket_id', activeTicket.id).order('created_at', { ascending: true });
+                                            if (data) setTicketMessages(data);
+                                          } catch (err: any) {
+                                            triggerToast(err.message);
+                                          }
+                                        }}
+                                        className="p-3 border-t border-deumah-gray-200 bg-white flex gap-2"
+                                      >
+                                        <input
+                                          type="text"
+                                          value={ticketReply}
+                                          onChange={e => setTicketReply(e.target.value)}
+                                          placeholder={isAr ? 'اكتب ردك هنا...' : 'Type your reply...'}
+                                          className="flex-1 bg-deumah-gray-50 border border-deumah-gray-200 rounded p-2.5 outline-none text-xs focus:border-deumah-green-600"
+                                        />
+                                        <button type="submit" className="bg-deumah-navy-950 text-white px-5 rounded text-xs font-bold hover:bg-deumah-navy-900 transition">
+                                          {isAr ? 'إرسال' : 'Send'}
+                                        </button>
+                                      </form>
+                                    )}
+                                    {activeTicket.status === 'closed' && (
+                                      <div className="p-3 text-center text-xs font-bold text-deumah-gray-500 bg-deumah-gray-100">
+                                        {isAr ? 'هذه التذكرة مغلقة.' : 'This ticket has been closed.'}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                          </div>
+
+                        </div>
+
+                      </main>
 
       {/* Success Notification Toast Popup */}
       {showToast && (

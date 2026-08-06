@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { Link, usePathname } from '@/i18n/navigation';
 import { HeartIcon, MenuIcon, PinIcon } from './icons';
 import { supabase } from '@/lib/supabase';
+import { NotificationDropdown } from './notification-dropdown';
 
 const CITIES_MAP: Record<string, { en: string; ar: string }> = {
   sanaa_city: { en: "Sana'a City", ar: "أمانة العاصمة" },
@@ -97,12 +98,10 @@ export function DeumahHeader() {
             {locale === 'ar' ? 'English' : 'العربية'}
           </Link>
           
-          <button aria-label={t('favorites')} className="hidden rounded-full p-2 hover:bg-white/10 sm:block">
-            <HeartIcon className="size-5"/>
-          </button>
-          
           {user ? (
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-3">
+              <NotificationDropdown userId={user.id} />
+              
               <Link 
                 href="/dashboard" 
                 className="flex items-center gap-2 bg-deumah-green-700 hover:bg-deumah-green-600 px-4 py-2 rounded-deumah-sm text-sm font-bold text-white transition shadow-sm"

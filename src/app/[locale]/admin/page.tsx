@@ -18,6 +18,7 @@ interface AdminListing {
   images: string[];
   created_at: string;
   owner_id: string;
+  views?: number;
 }
 
 interface UserProfile {
@@ -27,6 +28,7 @@ interface UserProfile {
   phone: string;
   governorate: string;
   updated_at: string;
+  account_status?: 'active' | 'suspended' | 'banned';
 }
 
 export default function AdminPage() {
@@ -45,6 +47,9 @@ export default function AdminPage() {
   // Users State
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [userAnalytics, setUserAnalytics] = useState({ adsCount: 0, activeAdsCount: 0 });
 
   // Notification Toast
   const [toastMsg, setToastMsg] = useState('');
@@ -92,11 +97,31 @@ export default function AdminPage() {
     }
   };
 
+  // Support Tickets State
+  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [adminActiveTicket, setAdminActiveTicket] = useState<any | null>(null);
+  const [adminTicketMessages, setAdminTicketMessages] = useState<any[]>([]);
+  const [adminTicketReply, setAdminTicketReply] = useState('');
+  
+  const fetchSupportTickets = async () => {
+    setLoadingTickets(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_get_all_tickets');
+      if (error) throw error;
+      if (data) setSupportTickets(data);
+    } catch (e: any) {
+      console.error(e);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
   const handleSyncAllData = async () => {
     setLoadingListings(true);
     setLoadingUsers(true);
     try {
-      await Promise.all([fetchListings(), fetchUsers()]);
+      await Promise.all([fetchListings(), fetchUsers(), fetchSupportTickets()]);
       triggerToast(isAr ? 'تمت مزامنة وتحديث كافة بيانات المنصة بنجاح! 🔄' : '✓ All database records synchronized successfully!');
     } catch (err: any) {
       triggerToast(err.message || (isAr ? 'فشلت المزامنة' : 'Sync failed'));
@@ -106,15 +131,19 @@ export default function AdminPage() {
   useEffect(() => {
     fetchListings();
     fetchUsers();
+    fetchSupportTickets();
   }, []);
 
   // Update listing moderation status
-  const handleUpdateStatus = async (id: string, newStatus: 'approved' | 'rejected') => {
+  const handleUpdateStatus = async (id: string, action: 'approved' | 'rejected') => {
+    const newStatus = action === 'approved' ? 'approved' : 'rejected';
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('listings')
         .update({ status: newStatus })
-        .eq('id', id);
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -122,10 +151,57 @@ export default function AdminPage() {
       triggerToast(newStatus === 'approved' 
         ? (isAr ? 'تم قبول ونشر الإعلان بنجاح!' : 'Listing approved & published!')
         : (isAr ? 'تم رفض الإعلان!' : 'Listing rejected!'));
-    } catch (err: any) {
-      triggerToast(err.message || 'Error updating status');
+    } catch (e: any) {
+      console.error(e);
+      triggerToast('Error updating status');
     }
   };
+
+  const handleUpdateUserStatus = async (userId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase.rpc('admin_update_user_status', { target_user_id: userId, new_status: newStatus });
+      if (error) throw error;
+      triggerToast(isAr ? 'تم تحديث حالة المستخدم بنجاح' : 'User status updated successfully');
+      setUsers(users.map(u => u.id === userId ? { ...u, account_status: newStatus as any } : u));
+      if (selectedUser?.id === userId) {
+        setSelectedUser({ ...selectedUser, account_status: newStatus as any });
+      }
+    } catch (e: any) {
+      triggerToast(e.message || 'Error updating user status');
+    }
+  };
+
+  const openUserDetails = async (u: UserProfile) => {
+    setSelectedUser(u);
+    setIsUserModalOpen(true);
+    setUserAnalytics({ adsCount: 0, activeAdsCount: 0 }); // reset
+    
+    try {
+      const { count: adsCount } = await supabase.from('listings').select('*', { count: 'exact', head: true }).eq('owner_id', u.id);
+      const { count: activeAdsCount } = await supabase.from('listings').select('*', { count: 'exact', head: true }).eq('owner_id', u.id).eq('status', 'active');
+      setUserAnalytics({ adsCount: adsCount || 0, activeAdsCount: activeAdsCount || 0 });
+    } catch (e) {
+      console.error('Error fetching analytics:', e);
+    }
+  };
+
+  // --- Analytics Calculations ---
+  const totalViews = listings.reduce((sum, item) => sum + (item.views || 0), 0);
+  const totalValue = listings
+    .filter(item => item.status === 'active' || item.status === 'approved')
+    .reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+  
+  const categoryCounts = listings.reduce((acc, item) => {
+    const cat = item.category || 'Other';
+    acc[cat] = (acc[cat] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const statusCounts = listings.reduce((acc, item) => {
+    const st = item.status || 'unknown';
+    acc[st] = (acc[st] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Delete listing
   const handleDeleteListing = async (id: string) => {
@@ -490,21 +566,32 @@ export default function AdminPage() {
                     </div>
                   ) : (
                     users.map(u => (
-                      <div key={u.id} className="p-4 flex items-center justify-between gap-4">
+                      <div key={u.id} className="p-4 border border-deumah-gray-200 rounded-deumah flex items-center justify-between bg-white hover:bg-deumah-gray-50 transition shadow-xs">
                         <div className="flex items-center gap-3">
-                          <div className="size-10 rounded-full bg-deumah-navy-950 text-white font-extrabold flex items-center justify-center text-sm">
-                            {u.full_name?.substring(0, 1) || 'U'}
+                          <div className="size-10 rounded-full bg-deumah-navy-950 text-white flex items-center justify-center font-bold text-lg font-heading uppercase">
+                            {u.full_name ? u.full_name.charAt(0) : 'U'}
                           </div>
                           <div>
-                            <h4 className="text-xs font-extrabold text-deumah-navy-950">{u.full_name || (isAr ? 'مستخدم مجهول' : 'Anonymous User')}</h4>
-                            <p className="text-[10px] text-deumah-gray-500 font-medium">✉️ {u.email || (isAr ? 'بدون بريد' : 'No email')} • 📱 {u.phone || (isAr ? 'بدون رقم' : 'No phone')} • 📍 {u.governorate || 'Sana\'a'}</p>
+                            <h4 className="text-xs font-extrabold text-deumah-navy-950 flex items-center gap-2">
+                              {u.full_name || (isAr ? 'مستخدم مجهول' : 'Anonymous User')}
+                              {u.account_status === 'banned' && (
+                                <span className="bg-red-100 text-red-700 text-[9px] px-1.5 py-0.5 rounded uppercase">{isAr ? 'محظور' : 'Banned'}</span>
+                              )}
+                              {u.account_status === 'suspended' && (
+                                <span className="bg-yellow-100 text-yellow-700 text-[9px] px-1.5 py-0.5 rounded uppercase">{isAr ? 'معلق' : 'Suspended'}</span>
+                              )}
+                            </h4>
+                            <p className="text-[10px] text-deumah-gray-500 font-medium mt-1">✉️ {u.email || (isAr ? 'بدون بريد' : 'No email')} • 📱 {u.phone || (isAr ? 'بدون رقم' : 'No phone')} • 📍 {u.governorate || 'Sana\'a'}</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="bg-deumah-green-50 text-deumah-green-700 text-[10px] font-bold px-2.5 py-1 rounded border border-deumah-green-200">
-                            ✓ {isAr ? 'نشط' : 'Active Account'}
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={() => openUserDetails(u)}
+                            className="text-xs font-bold bg-deumah-navy-50 text-deumah-navy-950 hover:bg-deumah-navy-100 px-3 py-1.5 rounded transition cursor-pointer"
+                          >
+                            {isAr ? 'عرض التفاصيل' : 'View Full Details'}
+                          </button>
                         </div>
                       </div>
                     ))
@@ -535,41 +622,229 @@ export default function AdminPage() {
 
             {/* 4. REPORTS & ANALYTICS TAB */}
             {activeTab === 'analytics' && (
-              <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg font-bold text-deumah-navy-950 font-heading">
                     {isAr ? 'التقارير والإحصائيات' : 'Platform Reports & Analytics'}
                   </h2>
                 </div>
-                <div className="p-12 text-center border border-deumah-gray-200 rounded-deumah bg-deumah-gray-50 flex flex-col items-center justify-center gap-3 shadow-inner">
-                  <span className="text-4xl">📈</span>
-                  <p className="text-sm font-bold text-deumah-navy-950">
-                    {isAr ? 'جاري تجميع البيانات الإحصائية' : 'Aggregating Analytical Data'}
-                  </p>
-                  <p className="text-xs text-deumah-gray-500 max-w-sm mx-auto">
-                    {isAr ? 'سيتم عرض الرسوم البيانية لأداء المنصة والمبيعات قريباً.' : 'Platform performance charts, growth metrics, and detailed analytics will be displayed here soon.'}
-                  </p>
+                
+                {/* Key Metrics Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-deumah border border-deumah-gray-200 shadow-sm flex flex-col justify-between">
+                    <span className="text-3xl mb-3">👥</span>
+                    <span className="text-[10px] font-bold text-deumah-gray-400 uppercase tracking-wider">{isAr ? 'إجمالي المستخدمين' : 'Total Registered Users'}</span>
+                    <span className="text-2xl font-black text-deumah-navy-950 mt-1">{users.length}</span>
+                  </div>
+                  <div className="bg-white p-5 rounded-deumah border border-deumah-gray-200 shadow-sm flex flex-col justify-between">
+                    <span className="text-3xl mb-3">👁️</span>
+                    <span className="text-[10px] font-bold text-deumah-gray-400 uppercase tracking-wider">{isAr ? 'إجمالي المشاهدات' : 'Total Platform Views'}</span>
+                    <span className="text-2xl font-black text-deumah-navy-950 mt-1">{totalViews.toLocaleString()}</span>
+                  </div>
+                  <div className="bg-white p-5 rounded-deumah border border-deumah-gray-200 shadow-sm flex flex-col justify-between">
+                    <span className="text-3xl mb-3">📦</span>
+                    <span className="text-[10px] font-bold text-deumah-gray-400 uppercase tracking-wider">{isAr ? 'إجمالي الإعلانات' : 'Total Listings'}</span>
+                    <span className="text-2xl font-black text-deumah-navy-950 mt-1">{listings.length}</span>
+                  </div>
+                  <div className="bg-deumah-navy-950 p-5 rounded-deumah border border-white/10 shadow-sm flex flex-col justify-between text-white">
+                    <span className="text-3xl mb-3">💰</span>
+                    <span className="text-[10px] font-bold text-white/50 uppercase tracking-wider">{isAr ? 'القيمة التقديرية للإعلانات' : 'Total Active Ad Value'}</span>
+                    <span className="text-2xl font-black text-deumah-gold-500 mt-1">${totalValue.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Secondary Analytics */}
+                <div className="grid lg:grid-cols-2 gap-4">
+                  {/* Category Breakdown */}
+                  <div className="bg-white p-6 rounded-deumah border border-deumah-gray-200 shadow-sm">
+                    <h3 className="text-sm font-black text-deumah-navy-950 mb-4">{isAr ? 'توزيع الإعلانات حسب الأقسام' : 'Listings by Category'}</h3>
+                    <div className="space-y-4">
+                      {Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).map(([cat, count], idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-deumah-gray-700 w-24 truncate capitalize">{cat}</span>
+                          <div className="flex-1 bg-deumah-gray-100 h-2.5 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-deumah-green-700 h-full rounded-full transition-all duration-1000"
+                              style={{ width: `${(count / listings.length) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-bold text-deumah-navy-950 w-8 text-right">{count}</span>
+                        </div>
+                      ))}
+                      {Object.keys(categoryCounts).length === 0 && (
+                        <p className="text-xs text-deumah-gray-400 font-medium italic">{isAr ? 'لا توجد بيانات' : 'No data available'}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Status Breakdown */}
+                  <div className="bg-white p-6 rounded-deumah border border-deumah-gray-200 shadow-sm">
+                    <h3 className="text-sm font-black text-deumah-navy-950 mb-4">{isAr ? 'حالة الإعلانات الحالية' : 'Listing Status Distribution'}</h3>
+                    <div className="space-y-4">
+                      {['active', 'pending', 'rejected', 'paused'].map(status => {
+                        const count = statusCounts[status] || 0;
+                        const percentage = listings.length > 0 ? (count / listings.length) * 100 : 0;
+                        const colors: Record<string, string> = {
+                          active: 'bg-deumah-green-700',
+                          pending: 'bg-yellow-500',
+                          rejected: 'bg-red-500',
+                          paused: 'bg-deumah-gray-400'
+                        };
+                        return (
+                          <div key={status} className="flex items-center gap-3">
+                            <span className="text-xs font-bold text-deumah-gray-700 w-24 truncate capitalize">{status}</span>
+                            <div className="flex-1 bg-deumah-gray-100 h-2.5 rounded-full overflow-hidden">
+                              <div 
+                                className={`${colors[status]} h-full rounded-full transition-all duration-1000`}
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-bold text-deumah-navy-950 w-8 text-right">{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* 5. SUPPORT TICKETS TAB */}
             {activeTab === 'support' && (
-              <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg font-bold text-deumah-navy-950 font-heading">
                     {isAr ? 'تذاكر الدعم الفني' : 'Customer Support Tickets'}
                   </h2>
+                  {adminActiveTicket && (
+                    <button 
+                      onClick={() => setAdminActiveTicket(null)}
+                      className="text-sm font-bold text-deumah-gray-500 hover:text-deumah-navy-950"
+                    >
+                      {isAr ? '← العودة للقائمة' : '← Back to List'}
+                    </button>
+                  )}
                 </div>
-                <div className="p-12 text-center border border-deumah-gray-200 rounded-deumah bg-deumah-gray-50 flex flex-col items-center justify-center gap-3 shadow-inner">
-                  <span className="text-4xl">💬</span>
-                  <p className="text-sm font-bold text-deumah-navy-950">
-                    {isAr ? 'لا توجد تذاكر دعم جديدة' : 'No new support tickets'}
-                  </p>
-                  <p className="text-xs text-deumah-gray-500 max-w-sm mx-auto">
-                    {isAr ? 'سيتم إدراج شكاوى المستخدمين واستفسارات الدعم الفني هنا.' : 'User complaints, technical issues, and general support inquiries will be listed here.'}
-                  </p>
-                </div>
+
+                {!adminActiveTicket ? (
+                  <div className="bg-white rounded-deumah border border-deumah-gray-200 overflow-hidden shadow-sm">
+                    {loadingTickets ? (
+                      <div className="p-8 text-center text-sm font-bold text-deumah-gray-500">Loading tickets...</div>
+                    ) : supportTickets.length === 0 ? (
+                      <div className="p-12 text-center text-sm font-bold text-deumah-gray-500">No support tickets found.</div>
+                    ) : (
+                      <div className="divide-y divide-deumah-gray-200">
+                        {supportTickets.map(ticket => (
+                          <div 
+                            key={ticket.id} 
+                            onClick={async () => {
+                              setAdminActiveTicket(ticket);
+                              const { data } = await supabase.from('ticket_messages').select('*').eq('ticket_id', ticket.id).order('created_at', { ascending: true });
+                              if (data) setAdminTicketMessages(data);
+                            }}
+                            className="p-4 flex items-center justify-between hover:bg-deumah-gray-50 transition cursor-pointer"
+                          >
+                            <div>
+                              <h4 className="text-sm font-bold text-deumah-navy-950">{ticket.subject}</h4>
+                              <p className="text-xs text-deumah-gray-500 mt-1">From: <span className="font-bold">{ticket.user_name || ticket.user_email}</span> • {new Date(ticket.created_at).toLocaleString()}</p>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                              ticket.status === 'open' ? 'bg-deumah-green-100 text-deumah-green-700' : 
+                              ticket.status === 'resolved' ? 'bg-blue-100 text-blue-700' : 'bg-deumah-gray-200 text-deumah-gray-700'
+                            }`}>
+                              {ticket.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="border border-deumah-gray-200 rounded-deumah flex flex-col h-[600px] overflow-hidden bg-white shadow-sm">
+                    {/* Header */}
+                    <div className="bg-deumah-navy-950 p-5 text-white flex justify-between items-center">
+                      <div>
+                        <h3 className="font-bold text-lg">{adminActiveTicket.subject}</h3>
+                        <p className="text-xs text-white/60 mt-1">Ticket #{adminActiveTicket.id.split('-')[0]} • From: {adminActiveTicket.user_name || adminActiveTicket.user_email}</p>
+                      </div>
+                      {adminActiveTicket.status !== 'closed' && (
+                        <button 
+                          onClick={async () => {
+                            if (!confirm(isAr ? 'هل أنت متأكد من إغلاق هذه التذكرة؟' : 'Are you sure you want to close this ticket?')) return;
+                            try {
+                              const { error } = await supabase.rpc('admin_close_ticket', { target_ticket_id: adminActiveTicket.id });
+                              if (error) throw error;
+                              triggerToast(isAr ? 'تم إغلاق التذكرة' : 'Ticket closed');
+                              setSupportTickets(prev => prev.map(t => t.id === adminActiveTicket.id ? { ...t, status: 'closed' } : t));
+                              setAdminActiveTicket({ ...adminActiveTicket, status: 'closed' });
+                            } catch (e: any) { triggerToast(e.message); }
+                          }}
+                          className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-1.5 rounded transition"
+                        >
+                          {isAr ? 'إغلاق التذكرة' : 'Close Ticket'}
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-deumah-gray-50">
+                      {adminTicketMessages.map(msg => (
+                        <div key={msg.id} className={`flex ${msg.is_admin ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[75%] p-4 rounded-xl text-sm shadow-sm ${
+                            msg.is_admin ? 'bg-deumah-green-700 text-white rounded-tr-none' : 'bg-white border border-deumah-gray-200 text-deumah-navy-950 rounded-tl-none'
+                          }`}>
+                            <div className="font-bold mb-2 flex justify-between gap-6">
+                              <span>{msg.is_admin ? 'You (Admin)' : (adminActiveTicket.user_name || adminActiveTicket.user_email)}</span>
+                              <span className="text-[10px] opacity-70">{new Date(msg.created_at).toLocaleString()}</span>
+                            </div>
+                            <p className="leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Reply Input */}
+                    {adminActiveTicket.status !== 'closed' ? (
+                      <form 
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (!adminTicketReply.trim()) return;
+                          try {
+                            const { data: { user } } = await supabase.auth.getUser();
+                            const { error } = await supabase.rpc('admin_reply_to_ticket', { 
+                              target_ticket_id: adminActiveTicket.id, 
+                              admin_id: user?.id, 
+                              reply_text: adminTicketReply 
+                            });
+                            if (error) throw error;
+                            setAdminTicketReply('');
+                            
+                            const { data } = await supabase.from('ticket_messages').select('*').eq('ticket_id', adminActiveTicket.id).order('created_at', { ascending: true });
+                            if (data) setAdminTicketMessages(data);
+                          } catch (err: any) {
+                            triggerToast(err.message);
+                          }
+                        }}
+                        className="p-4 border-t border-deumah-gray-200 bg-white flex gap-3"
+                      >
+                        <input
+                          type="text"
+                          value={adminTicketReply}
+                          onChange={e => setAdminTicketReply(e.target.value)}
+                          placeholder={isAr ? 'اكتب ردك للمستخدم...' : 'Type your reply to the user...'}
+                          className="flex-1 bg-deumah-gray-50 border border-deumah-gray-200 rounded-lg p-3 outline-none focus:border-deumah-green-600"
+                        />
+                        <button type="submit" className="bg-deumah-green-700 text-white px-6 rounded-lg font-bold hover:bg-deumah-green-600 transition">
+                          {isAr ? 'إرسال' : 'Send Reply'}
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="p-4 text-center text-sm font-bold text-deumah-gray-500 bg-deumah-gray-100 border-t border-deumah-gray-200">
+                        {isAr ? 'هذه التذكرة مغلقة ولا يمكن الرد عليها.' : 'This ticket is closed and cannot be replied to.'}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -608,6 +883,119 @@ export default function AdminPage() {
         <div className="fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium">
           <span className="size-5 rounded-full bg-deumah-green-700 text-white flex items-center justify-center font-bold text-xs font-heading">✓</span>
           <span className="text-xs font-semibold">{toastMsg}</span>
+        </div>
+      )}
+
+      {/* USER DETAILS MODAL */}
+      {isUserModalOpen && selectedUser && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-deumah-navy-950 p-6 flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="size-14 rounded-full bg-deumah-green-700 text-white flex items-center justify-center font-black text-2xl uppercase border-2 border-white/20">
+                  {selectedUser.full_name ? selectedUser.full_name.charAt(0) : 'U'}
+                </div>
+                <div>
+                  <h3 className="font-black text-white text-lg tracking-tight">
+                    {selectedUser.full_name || (isAr ? 'مستخدم مجهول' : 'Anonymous User')}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+                      selectedUser.account_status === 'banned' ? 'bg-red-500/20 text-red-300' :
+                      selectedUser.account_status === 'suspended' ? 'bg-yellow-500/20 text-yellow-300' :
+                      'bg-deumah-green-500/20 text-deumah-green-300'
+                    }`}>
+                      {selectedUser.account_status === 'banned' ? (isAr ? 'محظور نهائياً' : 'Banned') :
+                       selectedUser.account_status === 'suspended' ? (isAr ? 'معلق مؤقتاً' : 'Suspended') :
+                       (isAr ? 'نشط' : 'Active')}
+                    </span>
+                    <span className="text-[10px] text-white/50">• {selectedUser.id.substring(0, 8)}...</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsUserModalOpen(false)}
+                className="text-white/50 hover:text-white transition bg-white/5 rounded-full p-2 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Contact Info Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-deumah-gray-50 p-3 rounded border border-deumah-gray-100">
+                  <span className="block text-[10px] font-bold text-deumah-gray-400 uppercase tracking-wider mb-1">✉️ {isAr ? 'البريد الإلكتروني' : 'Email Address'}</span>
+                  <span className="text-xs font-bold text-deumah-navy-950">{selectedUser.email || '-'}</span>
+                </div>
+                <div className="bg-deumah-gray-50 p-3 rounded border border-deumah-gray-100">
+                  <span className="block text-[10px] font-bold text-deumah-gray-400 uppercase tracking-wider mb-1">📱 {isAr ? 'رقم الهاتف' : 'Phone Number'}</span>
+                  <span className="text-xs font-bold text-deumah-navy-950">{selectedUser.phone || '-'}</span>
+                </div>
+                <div className="bg-deumah-gray-50 p-3 rounded border border-deumah-gray-100">
+                  <span className="block text-[10px] font-bold text-deumah-gray-400 uppercase tracking-wider mb-1">📍 {isAr ? 'المدينة/المحافظة' : 'Location'}</span>
+                  <span className="text-xs font-bold text-deumah-navy-950">{selectedUser.governorate || '-'}</span>
+                </div>
+                <div className="bg-deumah-gray-50 p-3 rounded border border-deumah-gray-100">
+                  <span className="block text-[10px] font-bold text-deumah-gray-400 uppercase tracking-wider mb-1">📅 {isAr ? 'تاريخ الانضمام' : 'Joined Date'}</span>
+                  <span className="text-xs font-bold text-deumah-navy-950">{new Date(selectedUser.updated_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              {/* Analytics Section */}
+              <div className="border-t border-deumah-gray-100 pt-4">
+                <h4 className="text-[11px] font-black text-deumah-navy-950 uppercase tracking-wider mb-3">
+                  📊 {isAr ? 'إحصائيات المستخدم' : 'Platform Activity Analytics'}
+                </h4>
+                <div className="flex gap-3">
+                  <div className="flex-1 bg-white border-2 border-deumah-gray-100 rounded-lg p-3 text-center">
+                    <span className="text-2xl font-black text-deumah-navy-950 block">{userAnalytics.adsCount}</span>
+                    <span className="text-[10px] font-bold text-deumah-gray-500 uppercase">{isAr ? 'إجمالي الإعلانات' : 'Total Listings'}</span>
+                  </div>
+                  <div className="flex-1 bg-deumah-green-50 border-2 border-deumah-green-100 rounded-lg p-3 text-center">
+                    <span className="text-2xl font-black text-deumah-green-700 block">{userAnalytics.activeAdsCount}</span>
+                    <span className="text-[10px] font-bold text-deumah-green-700 uppercase">{isAr ? 'إعلانات نشطة' : 'Active Listings'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Moderation Actions */}
+              <div className="border-t border-deumah-gray-100 pt-4">
+                <h4 className="text-[11px] font-black text-deumah-navy-950 uppercase tracking-wider mb-3">
+                  🛡️ {isAr ? 'إجراءات الإدارة' : 'Moderation Actions'}
+                </h4>
+                
+                {selectedUser.account_status === 'banned' ? (
+                  <button 
+                    onClick={() => handleUpdateUserStatus(selectedUser.id, 'active')}
+                    className="w-full bg-deumah-green-700 hover:bg-deumah-green-600 text-white font-bold py-3 rounded text-sm transition shadow-sm cursor-pointer"
+                  >
+                    🔄 {isAr ? 'إلغاء الحظر (تنشيط الحساب)' : 'Reinstate User Account'}
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleUpdateUserStatus(selectedUser.id, 'suspended')}
+                      className="flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-bold py-3 rounded text-sm transition cursor-pointer border border-yellow-200"
+                    >
+                      ⏳ {isAr ? 'تعليق مؤقت' : 'Suspend Temporarily'}
+                    </button>
+                    <button 
+                      onClick={() => handleUpdateUserStatus(selectedUser.id, 'banned')}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded text-sm transition shadow-sm cursor-pointer"
+                    >
+                      🚫 {isAr ? 'حظر نهائي' : 'Ban User Permanently'}
+                    </button>
+                  </div>
+                )}
+                <p className="text-[9px] text-deumah-gray-400 text-center mt-2 font-medium">
+                  {isAr ? 'تنبيه: حظر المستخدم سيقوم تلقائياً بإيقاف جميع إعلاناته النشطة لحماية المشترين.' : 'Warning: Banning a user will automatically pause all their active listings to protect buyers.'}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

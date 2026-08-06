@@ -28,7 +28,7 @@ async function getListing(id: string) {
         ownerId: data.owner_id,
         category: data.category,
         images: data.images && data.images.length ? data.images : ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80'],
-        videoUrl: data.video_url || null,
+        video: data.video_url || null,
         titleEn: data.title_en,
         titleAr: data.title_ar,
         price: Number(data.price),
@@ -56,7 +56,8 @@ async function getListing(id: string) {
           nameAr: 'بائع موثق',
           memberSinceEn: '2024',
           memberSinceAr: '٢٠٢٤',
-          responseRate: '98%'
+          responseRate: '98%',
+          contact: data.specifications?.contact || null
         }
       };
     }

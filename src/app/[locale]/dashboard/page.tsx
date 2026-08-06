@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
@@ -121,6 +121,15 @@ export default function DashboardPage() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [threads, activeThreadId]);
 
   // Support Tickets State
   const [tickets, setTickets] = useState<any[]>([]);
@@ -962,6 +971,7 @@ export default function DashboardPage() {
                               </div>
                             );
                           })}
+                          <div ref={messagesEndRef} />
                         </div>
                         
                         {/* Chat Input */}

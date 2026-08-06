@@ -81,7 +81,15 @@ export default function RegisterPage() {
 
     } catch (err: any) {
       setLoading(false);
-      setErrorMsg(err.message || (isAr ? 'حدث خطأ أثناء إنشاء الحساب.' : 'An error occurred during registration.'));
+      let finalErr = isAr ? 'حدث خطأ أثناء إنشاء الحساب.' : 'An error occurred during registration.';
+      if (err?.message && typeof err.message === 'string' && err.message !== '{}') {
+        finalErr = err.message;
+      } else if (typeof err === 'string' && err !== '{}') {
+        finalErr = err;
+      } else if (err?.msg && typeof err.msg === 'string') {
+        finalErr = err.msg;
+      }
+      setErrorMsg(finalErr);
     }
   };
 

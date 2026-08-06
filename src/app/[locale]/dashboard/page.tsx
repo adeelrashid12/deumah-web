@@ -122,9 +122,12 @@ export default function DashboardPage() {
   const [replyText, setReplyText] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -941,7 +944,7 @@ export default function DashboardPage() {
                         )}
 
                         {/* Chat Messages */}
-                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-thin">
+                        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-thin">
                           {threads.find(t => t.id === activeThreadId)?.messages.map((msg, idx, arr) => {
                             const isMe = msg.sender_id === currentUser?.id;
                             const showAvatar = !isMe && (idx === 0 || arr[idx - 1].sender_id !== msg.sender_id);

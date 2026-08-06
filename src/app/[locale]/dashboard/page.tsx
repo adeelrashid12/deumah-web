@@ -294,6 +294,41 @@ export default function DashboardPage() {
       }
     }
     loadDashboardData();
+
+    let channel: any;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      channel = supabase.channel('realtime:chat')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+          const newMsg = payload.new as any;
+          if (newMsg.receiver_id === user.id || newMsg.sender_id === user.id) {
+            setThreads(prev => {
+              const otherUserId = newMsg.sender_id === user.id ? newMsg.receiver_id : newMsg.sender_id;
+              const threadId = `${newMsg.listing_id}_${otherUserId}`;
+              const exists = prev.find(t => t.id === threadId);
+              if (exists) {
+                return prev.map(t => {
+                  if (t.id === threadId) {
+                    if (t.messages.find((m: any) => m.id === newMsg.id)) return t;
+                    return { ...t, messages: [...t.messages, newMsg], last_message: newMsg };
+                  }
+                  return t;
+                }).sort((a, b) => new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime());
+              } else {
+                loadDashboardData(); 
+                return prev;
+              }
+            });
+          }
+        })
+        .subscribe();
+    });
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   const handleSendReply = async (e: React.FormEvent) => {

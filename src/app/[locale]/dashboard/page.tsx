@@ -1023,15 +1023,49 @@ export default function DashboardPage() {
                                 </p>
                                 </div>
                               </div>
-                              <button
-                                onClick={() => {
-                                  const id = threads.find(t => t.id === activeThreadId)?.other_user_id;
-                                  if (id) handleToggleBlock(id);
-                                }}
-                                className="text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-deumah-sm hover:bg-red-50 transition cursor-pointer flex items-center gap-1 font-bold"
-                              >
-                                🚫 {blockedUsers.includes(threads.find(t => t.id === activeThreadId)?.other_user_id || '') ? (isAr ? 'إلغاء الحظر' : 'Unblock') : (isAr ? 'حظر' : 'Block User')}
-                              </button>
+                              <div className="relative">
+                                <button
+                                  onClick={() => setActiveDropdownId(activeDropdownId === activeThreadId ? null : activeThreadId)}
+                                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-deumah-gray-100 text-deumah-gray-600 transition"
+                                >
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                  </svg>
+                                </button>
+                                
+                                {activeDropdownId === activeThreadId && (
+                                  <div className="absolute right-0 rtl:left-0 rtl:right-auto mt-2 w-48 bg-white border border-deumah-gray-200 rounded-deumah shadow-lg z-50 overflow-hidden">
+                                    <button
+                                      onClick={() => {
+                                        handleToggleMute(threads.find(t => t.id === activeThreadId)?.other_user_id!);
+                                        setActiveDropdownId(null);
+                                      }}
+                                      className="w-full text-left rtl:text-right px-4 py-3 text-sm text-deumah-navy-900 hover:bg-deumah-gray-50 flex items-center gap-2 font-bold transition border-b border-deumah-gray-100 cursor-pointer"
+                                    >
+                                      🔇 {mutedUsers.includes(threads.find(t => t.id === activeThreadId)?.other_user_id || '') ? (isAr ? 'إلغاء كتم الإشعارات' : 'Unmute User') : (isAr ? 'كتم الإشعارات' : 'Mute User')}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const id = threads.find(t => t.id === activeThreadId)?.other_user_id;
+                                        if (id) handleToggleBlock(id);
+                                        setActiveDropdownId(null);
+                                      }}
+                                      className="w-full text-left rtl:text-right px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-bold transition border-b border-deumah-gray-100 cursor-pointer"
+                                    >
+                                      🚫 {blockedUsers.includes(threads.find(t => t.id === activeThreadId)?.other_user_id || '') ? (isAr ? 'إلغاء الحظر' : 'Unblock User') : (isAr ? 'حظر المستخدم' : 'Block User')}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setReportModalOpen(true);
+                                        setActiveDropdownId(null);
+                                      }}
+                                      className="w-full text-left rtl:text-right px-4 py-3 text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2 font-bold transition cursor-pointer"
+                                    >
+                                      ⚠️ {isAr ? 'إبلاغ عن المستخدم' : 'Report User'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                         )}
 

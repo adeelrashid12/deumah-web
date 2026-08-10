@@ -981,22 +981,7 @@ export default function PostAdPage() {
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-4">
-              {/* Currency Selector */}
-              <div>
-                <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
-                  {isAr ? 'العملة' : 'Currency'}
-                </label>
-                <select
-                  value={currency}
-                  onChange={e => setCurrency(e.target.value as 'USD' | 'YER')}
-                  className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-bold text-deumah-green-800"
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="YER">YER (ريال يمني)</option>
-                </select>
-              </div>
-
+            <div className="grid gap-4 sm:grid-cols-3">
               {/* Price */}
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
@@ -1023,8 +1008,8 @@ export default function PostAdPage() {
                   className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-semibold"
                 >
                   <option value="USD">USD ($)</option>
-                  <option value="YER">YER (ر.ي)</option>
-                  <option value="SAR">SAR (ر.س)</option>
+                  <option value="YER">{isAr ? 'ريال يمني' : 'YER'}</option>
+                  <option value="SAR">{isAr ? 'ريال سعودي' : 'SAR'}</option>
                 </select>
               </div>
 

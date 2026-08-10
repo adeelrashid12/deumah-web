@@ -193,37 +193,40 @@ export default function DashboardPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        // 0. Parallelize initial basic data fetching
+        const [
+          { data: myBlocks },
+          { data: blockedMe },
+          { data: myMutes },
+          { data: profile },
+          { data: listings },
+          { data: sentMessages },
+          { data: receivedMessages },
+          { data: offersData },
+          { data: favData },
+          { data: supportTicketsData }
+        ] = await Promise.all([
+          supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id),
+          supabase.from('user_blocks').select('blocker_id').eq('blocked_id', user.id),
+          supabase.from('user_mutes').select('muted_id').eq('muter_id', user.id),
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
+          supabase.from('listings').select('*').eq('owner_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('messages').select('*').eq('sender_id', user.id),
+          supabase.from('messages').select('*').eq('receiver_id', user.id),
+          supabase.from('offers').select('*').or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order('created_at', { ascending: false }),
+          supabase.from('favorites').select('listing_id, listings(id, title_en, title_ar, price, currency, images, type)').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('support_tickets').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+        ]);
 
-        setCurrentUser(user);
-        setEmail(user.email || '');
-
-        // 0. Fetch blocks & mutes
-        const { data: myBlocks } = await supabase.from('user_blocks').select('blocked_id').eq('blocker_id', user.id);
         if (myBlocks) setBlockedUsers(myBlocks.map(b => b.blocked_id));
-        const { data: blockedMe } = await supabase.from('user_blocks').select('blocker_id').eq('blocked_id', user.id);
         if (blockedMe) setBlockedByUsers(blockedMe.map(b => b.blocker_id));
-        const { data: myMutes } = await supabase.from('user_mutes').select('muted_id').eq('muter_id', user.id);
         if (myMutes) setMutedUsers(myMutes.map(m => m.muted_id));
-
-        // 1. Fetch user profile settings from public.profiles
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
 
         if (profile) {
           setFullName(profile.full_name || '');
           setPhone(profile.phone || '');
           setGovernorate(profile.governorate || 'sanaa_city');
         }
-
-        // 2. Fetch user's listings
-        const { data: listings } = await supabase
-          .from('listings')
-          .select('*')
-          .eq('owner_id', user.id)
-          .order('created_at', { ascending: false });
 
         if (listings) {
           setListingsList(listings.map(item => ({
@@ -239,77 +242,84 @@ export default function DashboardPage() {
           })));
         }
 
-        // 3. Fetch messages and group into threads
-        const { data: sentMessages } = await supabase.from('messages').select('*').eq('sender_id', user.id);
-        const { data: receivedMessages } = await supabase.from('messages').select('*').eq('receiver_id', user.id);
-        
+        // 3. Process messages into threads
         const allMessages = [...(sentMessages || []), ...(receivedMessages || [])]
           .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         
         const threadMap = new Map<string, ChatThread>();
         
+        // Collect all IDs for bulk fetch
+        const listingIdsToFetch = new Set<string>();
+        const userIdsToFetch = new Set<string>();
+
         for (const msg of allMessages) {
           const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
           if (!otherUserId) continue;
-          
           const threadId = `${msg.listing_id}_${otherUserId}`;
           
           if (!threadMap.has(threadId)) {
-            const { data: listingData } = await supabase.from('listings').select('title_en, title_ar').eq('id', msg.listing_id).maybeSingle();
-            const { data: profileData } = await supabase.from('profiles').select('full_name, email').eq('id', otherUserId).maybeSingle();
-            
+            listingIdsToFetch.add(msg.listing_id);
+            userIdsToFetch.add(otherUserId);
             threadMap.set(threadId, {
               id: threadId,
               listing_id: msg.listing_id,
-              listing_title: listingData ? (isAr ? listingData.title_ar : listingData.title_en) : 'Ad',
+              listing_title: 'Ad', // Placeholder
               other_user_id: otherUserId,
-              other_user_name: profileData ? (profileData.full_name || profileData.email.split('@')[0]) : 'User',
+              other_user_name: 'User', // Placeholder
               messages: [],
               last_message: msg
             });
           }
-          
           const thread = threadMap.get(threadId)!;
           thread.messages.push(msg);
           thread.last_message = msg;
         }
-        
-        const threadArray = Array.from(threadMap.values())
-          .sort((a, b) => new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime());
+
+        if (offersData && offersData.length > 0) {
+          for (const off of offersData) {
+            listingIdsToFetch.add(off.listing_id);
+            const otherUserId = off.buyer_id === user.id ? off.seller_id : off.buyer_id;
+            userIdsToFetch.add(otherUserId);
+          }
+        }
+
+        // Bulk Fetch Details
+        const [ { data: fetchedListings }, { data: fetchedProfiles } ] = await Promise.all([
+          listingIdsToFetch.size > 0 ? supabase.from('listings').select('id, title_en, title_ar').in('id', Array.from(listingIdsToFetch)) : Promise.resolve({ data: [] }),
+          userIdsToFetch.size > 0 ? supabase.from('profiles').select('id, full_name, email').in('id', Array.from(userIdsToFetch)) : Promise.resolve({ data: [] })
+        ]);
+
+        const listingDict = new Map((fetchedListings || []).map(l => [l.id, l]));
+        const profileDict = new Map((fetchedProfiles || []).map(p => [p.id, p]));
+
+        // Hydrate Threads
+        const threadArray = Array.from(threadMap.values()).map(thread => {
+          const lData = listingDict.get(thread.listing_id);
+          const pData = profileDict.get(thread.other_user_id);
+          thread.listing_title = lData ? (isAr ? lData.title_ar : lData.title_en) : 'Ad';
+          thread.other_user_name = pData ? (pData.full_name || pData.email.split('@')[0]) : 'User';
+          return thread;
+        }).sort((a, b) => new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime());
         
         setThreads(threadArray);
 
-        // 4. Fetch Offers
-        const { data: offersData } = await supabase
-          .from('offers')
-          .select('*')
-          .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-          .order('created_at', { ascending: false });
-
+        // Hydrate Offers
         if (offersData && offersData.length > 0) {
-          const processedOffers = [];
-          for (const off of offersData) {
-            const { data: listingData } = await supabase.from('listings').select('title_en, title_ar').eq('id', off.listing_id).maybeSingle();
+          const processedOffers = offersData.map(off => {
+            const lData = listingDict.get(off.listing_id);
             const otherUserId = off.buyer_id === user.id ? off.seller_id : off.buyer_id;
-            const { data: profileData } = await supabase.from('profiles').select('full_name, email').eq('id', otherUserId).maybeSingle();
+            const pData = profileDict.get(otherUserId);
             
-            processedOffers.push({
+            return {
               ...off,
-              listing_title: listingData ? (isAr ? listingData.title_ar : listingData.title_en) : 'Ad',
-              buyer_name: off.buyer_id === user.id ? (isAr ? 'أنت' : 'You') : (profileData ? (profileData.full_name || profileData.email.split('@')[0]) : 'Buyer'),
-              seller_name: off.seller_id === user.id ? (isAr ? 'أنت' : 'You') : (profileData ? (profileData.full_name || profileData.email.split('@')[0]) : 'Seller')
-            });
-          }
+              listing_title: lData ? (isAr ? lData.title_ar : lData.title_en) : 'Ad',
+              buyer_name: off.buyer_id === user.id ? (isAr ? 'أنت' : 'You') : (pData ? (pData.full_name || pData.email.split('@')[0]) : 'Buyer'),
+              seller_name: off.seller_id === user.id ? (isAr ? 'أنت' : 'You') : (pData ? (pData.full_name || pData.email.split('@')[0]) : 'Seller')
+            };
+          });
           setOffersList(processedOffers);
         }
 
-        // 5. Fetch Favorites
-        const { data: favData } = await supabase
-          .from('favorites')
-          .select('listing_id, listings(id, title_en, title_ar, price, currency, images, type)')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        
         if (favData) {
           setSavedListings(favData.map(f => ({
             id: f.listing_id,
@@ -321,16 +331,12 @@ export default function DashboardPage() {
           })));
         }
 
-        // 6. Fetch Support Tickets
-        const { data: ticketsData } = await supabase
-          .from('support_tickets')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('updated_at', { ascending: false });
-        if (ticketsData) setTickets(ticketsData);
+        if (supportTicketsData) {
+          setTickets(supportTicketsData);
+        }
         
       } catch (e) {
-        console.error(e);
+        console.error('Error fetching dashboard data:', e);
       }
     }
     loadDashboardData();
@@ -628,7 +634,7 @@ export default function DashboardPage() {
           video_url: original.video_url,
           specifications: original.specifications,
           condition: original.condition,
-          status: 'active'
+          status: 'pending'
         })
         .select()
         .single();
@@ -759,13 +765,13 @@ export default function DashboardPage() {
         {/* COMPACT STATISTICS GRID */}
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-5 mb-6">
           {[
-            { label: isAr ? 'الإعلانات النشطة' : 'Active Listings', value: listingsList.filter(l => l.status === 'active').length, icon: '🚗' },
-            { label: isAr ? 'المشاهدات' : 'Total Views', value: listingsList.reduce((acc, l) => acc + l.views, 0), icon: '👁️' },
-            { label: isAr ? 'المفضلة' : 'Favorites', value: listingsList.reduce((acc, l) => acc + l.favorites, 0), icon: '⭐' },
-            { label: isAr ? 'الرسائل الواردة' : 'Inbox Messages', value: threads.length, icon: '💬' },
-            { label: isAr ? 'طلبات معلقة' : 'Pending Requests', value: listingsList.filter(l => l.status === 'pending').length, icon: '⏳' }
+            { id: 'listings', label: isAr ? 'الإعلانات النشطة' : 'Active Listings', value: listingsList.filter(l => l.status === 'active' || l.status === 'approved').length, icon: '🚗' },
+            { id: 'listings', label: isAr ? 'المشاهدات' : 'Total Views', value: listingsList.reduce((acc, l) => acc + l.views, 0), icon: '👁️' },
+            { id: 'saved', label: isAr ? 'المفضلة' : 'Favorites', value: savedListings.length, icon: '⭐' },
+            { id: 'messages', label: isAr ? 'الرسائل الواردة' : 'Inbox Messages', value: threads.length, icon: '💬' },
+            { id: 'offers', label: isAr ? 'طلبات معلقة' : 'Pending Requests', value: offersList.filter(o => o.status === 'pending').length, icon: '⏳' }
           ].map((stat, idx) => (
-            <div key={idx} className="bg-white border border-deumah-gray-200 rounded-deumah p-3 flex items-center gap-3 shadow-xs">
+            <button key={idx} type="button" onClick={() => setActiveTab(stat.id as never)} className="bg-white border border-deumah-gray-200 rounded-deumah p-3 flex items-center gap-3 shadow-xs hover:border-deumah-green-500 transition cursor-pointer text-left rtl:text-right w-full">
               <span className="text-xl shrink-0">{stat.icon}</span>
               <div>
                 <span className="block text-[9px] font-bold text-deumah-gray-400 uppercase tracking-wider leading-none mb-1">
@@ -773,7 +779,7 @@ export default function DashboardPage() {
                 </span>
                 <p className="text-sm font-black text-deumah-navy-950 leading-none">{stat.value}</p>
               </div>
-            </div>
+            </button>
           ))}
         </div>
 

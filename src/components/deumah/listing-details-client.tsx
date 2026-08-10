@@ -171,6 +171,21 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
       if (error) throw error;
       
+      // Send notification to the seller
+      const sellerId = (item as any).owner_id || (item as any).ownerId;
+      if (sellerId) {
+        await supabase.from('notifications').insert({
+          user_id: sellerId,
+          type: 'offer',
+          title_en: 'New Offer Received!',
+          title_ar: 'تم تلقي عرض جديد!',
+          message_en: `You received a new offer of ${amount} for your listing.`,
+          message_ar: `لقد تلقيت عرضاً جديداً بقيمة ${amount} لإعلانك.`,
+          listing_id: item.id,
+          read: false
+        });
+      }
+      
       setOfferToast(true);
       setShowOfferModal(false);
       setTimeout(() => setOfferToast(false), 3000);

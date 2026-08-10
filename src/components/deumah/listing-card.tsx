@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { HeartIcon, PinIcon } from './icons';
+import { supabase } from '@/lib/supabase';
 
 type Props = {
   id?: string;
@@ -19,6 +20,36 @@ type Props = {
 export function ListingCard({ id = '1', title, price, location, image, badge, badgeTone = 'rent', locale = 'en' }: Props) {
   const [isFavorited, setIsFavorited] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const isAr = locale === 'ar';
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (active && user) {
+        setCurrentUser(user);
+        // Check if already favorited
+        supabase
+          .from('favorites')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('listing_id', id)
+          .single()
+          .then(({ data }) => {
+            if (data && active) setIsFavorited(true);
+          });
+      }
+    });
+    return () => { active = false; };
+  }, [id]);
+
+  const triggerToast = (msg: string) => {
+    setToastMsg(msg);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2500);
+  };
 
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -27,25 +58,47 @@ export function ListingCard({ id = '1', title, price, location, image, badge, ba
     // Copy mockup link to clipboard
     const dummyUrl = `${window.location.origin}/${locale}/listings/${id}`;
     navigator.clipboard.writeText(dummyUrl).then(() => {
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      triggerToast(isAr ? 'تم نسخ الرابط!' : 'Link copied to clipboard!');
     });
   };
 
-  const handleFavorite = (e: React.MouseEvent) => {
+  const handleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorited(!isFavorited);
-  };
+    
+    if (!currentUser) {
+      triggerToast(isAr ? 'يرجى تسجيل الدخول للحفظ' : 'Please log in to save');
+      return;
+    }
 
-  const isAr = locale === 'ar';
+    try {
+      if (isFavorited) {
+        setIsFavorited(false);
+        const { error } = await supabase.from('favorites').delete().eq('user_id', currentUser.id).eq('listing_id', id);
+        if (error) {
+          setIsFavorited(true);
+          throw error;
+        }
+      } else {
+        setIsFavorited(true);
+        const { error } = await supabase.from('favorites').insert({ user_id: currentUser.id, listing_id: id });
+        if (error) {
+          setIsFavorited(false);
+          throw error;
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast(isAr ? 'حدث خطأ!' : 'An error occurred!');
+    }
+  };
 
   return (
     <article className="group relative overflow-hidden rounded-deumah border border-deumah-gray-200 bg-white shadow-deumah-card hover:shadow-md transition duration-300 flex flex-col justify-between h-full">
       {/* Toast Alert */}
       {showToast && (
         <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-30 bg-deumah-navy-950/90 text-white text-xs px-3 py-1.5 rounded-deumah shadow-md pointer-events-none transition-all duration-300 font-medium">
-          {isAr ? 'تم نسخ الرابط!' : 'Link copied to clipboard!'}
+          {toastMsg}
         </div>
       )}
 

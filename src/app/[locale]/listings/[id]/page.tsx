@@ -42,12 +42,32 @@ async function getListing(id: string) {
         descriptionAr: data.description_ar || '',
         specifications: data.specifications || {},
         specs: data.specifications && typeof data.specifications === 'object' && !Array.isArray(data.specifications)
-          ? Object.entries(data.specifications).map(([k, v]) => ({
-              labelEn: k,
-              labelAr: k,
-              valueEn: String(v),
-              valueAr: String(v)
-            }))
+          ? Object.entries(data.specifications)
+              .filter(([k]) => k !== 'contact')
+              .map(([k, v]) => {
+                const specLabelsAr: Record<string, string> = {
+                  brand: 'الماركة', model: 'الموديل', year: 'سنة الصنع', transmission: 'ناقل الحركة', fuel: 'نوع الوقود',
+                  mileage: 'المسافة المقطوعة', type: 'النوع', bedrooms: 'غرف النوم', bathrooms: 'الحمامات',
+                  area: 'المساحة', furnished: 'مفروش', capacity: 'السعة', soundSystem: 'نظام صوتي',
+                  ac: 'نظام التكييف', parking: 'مواقف سيارات', pool: 'مسبح', overnight: 'إمكانية المبيت',
+                  warranty: 'الضمان', pricingMethod: 'طريقة احتساب السعر'
+                };
+                const valStr = String(v).toLowerCase();
+                const specValuesAr: Record<string, string> = {
+                  automatic: 'أوتوماتيك', manual: 'عادي',
+                  gasoline: 'بنزين', diesel: 'ديزل', hybrid: 'هايبرد', electric: 'كهربائي',
+                  yes: 'نعم', no: 'لا',
+                  apartment: 'شقة', villa: 'فيلا', office: 'مكتب', land: 'أرض',
+                  central: 'مركزي', split: 'سبليت', none: 'بدون',
+                  fixed: 'ثابت', hourly: 'بالساعة', daily: 'باليوم', negotiable: 'حسب الاتفاق'
+                };
+                return {
+                  labelEn: k,
+                  labelAr: specLabelsAr[k] || k,
+                  valueEn: String(v),
+                  valueAr: specValuesAr[valStr] || String(v)
+                };
+              })
           : (Array.isArray(data.specifications) ? data.specifications : []),
         condition: data.condition || null,
         owner: {

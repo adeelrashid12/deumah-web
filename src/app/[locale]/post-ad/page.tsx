@@ -1007,7 +1007,7 @@ export default function PostAdPage() {
                   onChange={e => setCurrency(e.target.value as any)}
                   className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-semibold"
                 >
-                  <option value="USD">USD ($)</option>
+                  <option value="USD">{isAr ? 'دولار أمريكي' : 'USD ($)'}</option>
                   <option value="YER">{isAr ? 'ريال يمني' : 'YER'}</option>
                   <option value="SAR">{isAr ? 'ريال سعودي' : 'SAR'}</option>
                 </select>

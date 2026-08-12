@@ -83,7 +83,11 @@ export default function RegisterPage() {
       setLoading(false);
       let finalErr = isAr ? 'حدث خطأ أثناء إنشاء الحساب.' : 'An error occurred during registration.';
       if (err?.message && typeof err.message === 'string' && err.message !== '{}') {
-        finalErr = err.message;
+        if (isAr && err.message.toLowerCase().includes('already registered')) {
+          finalErr = 'يوجد حساب مسجل بهذا البريد الإلكتروني';
+        } else {
+          finalErr = err.message;
+        }
       } else if (typeof err === 'string' && err !== '{}') {
         finalErr = err;
       } else if (err?.msg && typeof err.msg === 'string') {
@@ -131,7 +135,11 @@ export default function RegisterPage() {
                 type="text"
                 placeholder={isAr ? 'مثال: محمد علي' : 'e.g. John Doe'}
                 value={fullName}
-                onChange={e => setFullName(e.target.value)}
+                onChange={e => {
+                  setFullName(e.target.value);
+                  (e.target as HTMLInputElement).setCustomValidity('');
+                }}
+                onInvalid={isAr ? (e) => (e.target as HTMLInputElement).setCustomValidity('يرجى ملء هذا الحقل.') : undefined}
                 disabled={loading}
                 className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                 required
@@ -147,7 +155,11 @@ export default function RegisterPage() {
                 type="tel"
                 placeholder={isAr ? '77xxxxxxx (للتواصل في الإعلانات)' : '77xxxxxxx (For listing contact)'}
                 value={phone}
-                onChange={e => setPhone(e.target.value)}
+                onChange={e => {
+                  setPhone(e.target.value);
+                  (e.target as HTMLInputElement).setCustomValidity('');
+                }}
+                onInvalid={isAr ? (e) => (e.target as HTMLInputElement).setCustomValidity('يرجى ملء هذا الحقل.') : undefined}
                 disabled={loading}
                 className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                 required
@@ -163,7 +175,11 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="name@example.com"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={e => {
+                  setEmail(e.target.value);
+                  (e.target as HTMLInputElement).setCustomValidity('');
+                }}
+                onInvalid={isAr ? (e) => (e.target as HTMLInputElement).setCustomValidity('يرجى تضمين "@" في عنوان البريد الإلكتروني أو إدخال بريد صحيح.') : undefined}
                 disabled={loading}
                 className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                 required
@@ -200,7 +216,11 @@ export default function RegisterPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={e => {
+                    setPassword(e.target.value);
+                    (e.target as HTMLInputElement).setCustomValidity('');
+                  }}
+                  onInvalid={isAr ? (e) => (e.target as HTMLInputElement).setCustomValidity('يرجى ملء هذا الحقل.') : undefined}
                   disabled={loading}
                   className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                   required
@@ -224,7 +244,11 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="••••••••"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={e => {
+                  setConfirmPassword(e.target.value);
+                  (e.target as HTMLInputElement).setCustomValidity('');
+                }}
+                onInvalid={isAr ? (e) => (e.target as HTMLInputElement).setCustomValidity('يرجى ملء هذا الحقل.') : undefined}
                 disabled={loading}
                 className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                 required
@@ -280,14 +304,16 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 py-2.5 border border-deumah-gray-200 rounded-deumah-sm text-xs font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition"
+                onClick={() => handleOAuth('google')}
+                className="flex items-center justify-center gap-2 py-2.5 border border-deumah-gray-200 rounded-deumah-sm text-xs font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition cursor-pointer"
               >
                 <span>🌐</span>
                 <span>Google</span>
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 py-2.5 border border-deumah-gray-200 rounded-deumah-sm text-xs font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition"
+                onClick={() => handleOAuth('apple')}
+                className="flex items-center justify-center gap-2 py-2.5 border border-deumah-gray-200 rounded-deumah-sm text-xs font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition cursor-pointer"
               >
                 <span>🍎</span>
                 <span>Apple</span>

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useLocale } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { useRouter } from '@/i18n/navigation';
@@ -13,14 +14,17 @@ interface PhotoItem {
   url: string;
 }
 
-export default function PostAdPage() {
+function PostAdForm() {
   const locale = useLocale();
   const isAr = locale === 'ar';
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Basic Details State
-  const [transactionType, setTransactionType] = useState<'rent' | 'sell'>('rent');
-  const [category, setCategory] = useState<string>('cars');
+  const [transactionType, setTransactionType] = useState<'rent' | 'sell'>(
+    (searchParams.get('type') as 'rent' | 'sell') || 'sell'
+  );
+  const [category, setCategory] = useState<string>(searchParams.get('category') || 'cars');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -1386,5 +1390,13 @@ export default function PostAdPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function PostAdPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-deumah-gray-50 flex items-center justify-center">Loading...</div>}>
+      <PostAdForm />
+    </Suspense>
   );
 }

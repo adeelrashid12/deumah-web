@@ -138,12 +138,10 @@ export default function AdminPage() {
   const handleUpdateStatus = async (id: string, action: 'approved' | 'rejected') => {
     const newStatus = action === 'approved' ? 'approved' : 'rejected';
     try {
-      const { data, error } = await supabase
-        .from('listings')
-        .update({ status: newStatus })
-        .eq('id', id)
-        .select()
-        .single();
+      const { error } = await supabase.rpc('admin_update_listing_status', { 
+        target_listing_id: id, 
+        new_status: newStatus 
+      });
 
       if (error) throw error;
 
@@ -207,12 +205,19 @@ export default function AdminPage() {
   const handleDeleteListing = async (id: string) => {
     if (!confirm(isAr ? 'هل أنت تأكد من حذف هذا الإعلان نهائياً؟' : 'Are you sure you want to delete this listing permanently?')) return;
     try {
-      const { error } = await supabase
-        .from('listings')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.rpc('admin_delete_listing', {
+        target_listing_id: id
+      });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('foreign key constraint')) {
+          alert(isAr 
+            ? 'لا يمكن حذف هذا الإعلان نهائياً (لأنه مرتبط برسائل أو عروض نشطة). يرجى استخدام زر "رفض الإعلان" بدلاً من ذلك لإخفائه.' 
+            : 'Cannot permanently delete this listing (it is tied to active messages or offers). Please use "Reject Ad" instead to hide it.');
+          return;
+        }
+        throw error;
+      }
 
       setListings(prev => prev.filter(l => l.id !== id));
       triggerToast(isAr ? 'تم حذف الإعلان بنجاح!' : 'Listing deleted successfully!');
@@ -488,7 +493,20 @@ export default function AdminPage() {
                                 <div className="flex items-center gap-2 text-[10px] font-semibold text-deumah-gray-500 flex-wrap">
                                   <span>🏷️ {item.category}</span>
                                   <span>•</span>
-                                  <span className="text-deumah-green-700 font-extrabold">{item.price} {item.currency || 'USD'}</span>
+                                  <span className="text-deumah-green-700 font-extrabold">
+                                    {(() => {
+                                      const c = (item.currency || 'USD').toUpperCase().trim();
+                                      let cStr = isAr ? 'دولار' : '$';
+                                      if (c === 'YER') cStr = isAr ? 'ريال يمني' : 'YER';
+                                      if (c === 'SAR') cStr = isAr ? 'ريال سعودي' : 'SAR';
+                                      
+                                      const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+                                      const numWithCommas = Number(item.price).toLocaleString('en-US');
+                                      const numStr = isAr ? numWithCommas.replace(/[0-9]/g, w => arabicDigits[+w]) : numWithCommas;
+                                      
+                                      return isAr ? `${numStr} ${cStr}` : `${cStr === '$' ? '$' : ''}${numStr} ${cStr !== '$' ? cStr : ''}`.trim();
+                                    })()}
+                                  </span>
                                   <span>•</span>
                                   <span>📅 {new Date(item.created_at).toLocaleDateString()}</span>
                                 </div>

@@ -123,7 +123,21 @@ export function DeumahHome() {
     id: item.id,
     image: item.images?.[0] || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80',
     title: isAr ? (item.title_ar || item.title_en) : item.title_en,
-    price: item.type === 'rent' ? `${item.price} ${item.currency || 'USD'} / ${isAr ? 'يوم' : 'Day'}` : `${item.price} ${item.currency || 'USD'}`,
+    price: (() => {
+      const c = (item.currency || 'USD').toUpperCase().trim();
+      let cStr = isAr ? 'دولار' : '$';
+      if (c === 'YER') cStr = isAr ? 'ريال يمني' : 'YER';
+      if (c === 'SAR') cStr = isAr ? 'ريال سعودي' : 'SAR';
+      if (c === 'USD') cStr = isAr ? 'دولار أمريكي' : '$';
+
+      // toArabicNumerals inline
+      const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+      const numWithCommas = Number(item.price).toLocaleString('en-US');
+      const numStr = isAr ? numWithCommas.replace(/[0-9]/g, w => arabicDigits[+w]) : numWithCommas;
+      
+      const basePrice = isAr ? `${numStr} ${cStr}` : `${cStr === '$' ? '$' : ''}${numStr} ${cStr !== '$' ? cStr : ''}`.trim();
+      return item.type === 'rent' ? `${basePrice} / ${isAr ? 'يوم' : 'Day'}` : basePrice;
+    })(),
     location: item.governorate === 'sanaa_city' ? (isAr ? 'أمانة العاصمة' : "Sana'a City") : (isAr ? 'صنعاء' : "Sana'a"),
     badge: item.type === 'sell' ? listings('sell') : listings('rent'),
     badgeTone: (item.type === 'sell' ? 'sell' : 'rent') as 'sell' | 'rent'

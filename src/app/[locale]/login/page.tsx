@@ -49,6 +49,20 @@ export default function LoginPage() {
         throw error;
       }
 
+      // Check if user is banned or suspended in profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('account_status')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profile && (profile.account_status === 'banned' || profile.account_status === 'suspended')) {
+        await supabase.auth.signOut();
+        throw new Error(isAr 
+          ? 'تم تعليق أو حظر هذا الحساب من قبل الإدارة. يرجى التواصل مع الدعم الفني.' 
+          : 'This account has been suspended or banned by administration. Please contact support.');
+      }
+
       setLoading(false);
       setShowSuccessToast(true);
       setTimeout(() => {
@@ -59,6 +73,20 @@ export default function LoginPage() {
     } catch (err: any) {
       setLoading(false);
       setErrorMsg(err.message || (isAr ? 'خطأ في البريد الإلكتروني/رقم الهاتف أو كلمة المرور!' : 'Invalid email/phone or password!'));
+    }
+  };
+
+  const handleOAuth = async (provider: 'google' | 'apple') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setErrorMsg(err.message || 'OAuth authentication failed');
     }
   };
 
@@ -100,7 +128,11 @@ export default function LoginPage() {
                 type="email"
                 placeholder="name@example.com"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={e => {
+                  setEmail(e.target.value);
+                  (e.target as HTMLInputElement).setCustomValidity('');
+                }}
+                onInvalid={isAr ? (e) => (e.target as HTMLInputElement).setCustomValidity('يرجى تضمين "@" في عنوان البريد الإلكتروني أو إدخال بريد صحيح.') : undefined}
                 disabled={loading}
                 className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                 required
@@ -113,16 +145,20 @@ export default function LoginPage() {
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider">
                   {isAr ? 'كلمة المرور' : 'Password'}
                 </label>
-                <a href="#" className="text-[10px] font-bold text-deumah-green-700 hover:text-deumah-green-600">
+                <Link href="/forgot-password" className="text-[10px] font-bold text-deumah-green-700 hover:text-deumah-green-600">
                   {isAr ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={e => {
+                    setPassword(e.target.value);
+                    (e.target as HTMLInputElement).setCustomValidity('');
+                  }}
+                  onInvalid={isAr ? (e) => (e.target as HTMLInputElement).setCustomValidity('يرجى ملء هذا الحقل.') : undefined}
                   disabled={loading}
                   className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-2.5 outline-none focus:border-deumah-green-600 bg-white"
                   required
@@ -181,14 +217,16 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 py-2.5 border border-deumah-gray-200 rounded-deumah-sm text-xs font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition"
+                onClick={() => handleOAuth('google')}
+                className="flex items-center justify-center gap-2 py-2.5 border border-deumah-gray-200 rounded-deumah-sm text-xs font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition cursor-pointer"
               >
                 <span>🌐</span>
                 <span>Google</span>
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center gap-2 py-2.5 border border-deumah-gray-200 rounded-deumah-sm text-xs font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition"
+                onClick={() => handleOAuth('apple')}
+                className="flex items-center justify-center gap-2 py-2.5 border border-deumah-gray-200 rounded-deumah-sm text-xs font-bold text-deumah-gray-700 hover:bg-deumah-gray-50 transition cursor-pointer"
               >
                 <span>🍎</span>
                 <span>Apple</span>

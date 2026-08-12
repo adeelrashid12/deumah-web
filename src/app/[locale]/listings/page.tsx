@@ -150,6 +150,7 @@ function SearchResultsPage() {
             titleEn: item.title_en,
             titleAr: item.title_ar,
             price: Number(item.price),
+            currency: item.currency || 'USD',
             periodEn: item.type === 'rent' ? 'Day' : '',
             periodAr: item.type === 'rent' ? 'يوم' : '',
             type: item.type,
@@ -568,7 +569,20 @@ function SearchResultsPage() {
                       id={item.id}
                       locale={locale}
                       title={isAr ? item.titleAr : item.titleEn}
-                      price={isAr ? `${toArabicNumerals(item.price)} دولار ${item.periodAr ? `/ ${item.periodAr}` : ''}` : `$${item.price} ${item.periodEn ? `/ ${item.periodEn}` : ''}`}
+                      price={(() => {
+                        const numWithCommas = Number(item.price).toLocaleString('en-US');
+                        const numStr = isAr ? toArabicNumerals(numWithCommas) : numWithCommas;
+                        const c = (item.currency || 'USD').toUpperCase().trim();
+                        let cStr = isAr ? 'دولار' : '$';
+                        if (c === 'YER') cStr = isAr ? 'ريال يمني' : 'YER';
+                        if (c === 'SAR') cStr = isAr ? 'ريال سعودي' : 'SAR';
+                        if (c === 'USD') cStr = isAr ? 'دولار أمريكي' : '$';
+                        
+                        const basePrice = isAr ? `${numStr} ${cStr}` : `${cStr === '$' ? '$' : ''}${numStr} ${cStr !== '$' ? cStr : ''}`.trim();
+                        return isAr 
+                          ? `${basePrice} ${item.periodAr ? `/ ${item.periodAr}` : ''}`
+                          : `${basePrice} ${item.periodEn ? `/ ${item.periodEn}` : ''}`;
+                      })()}
                       location={isAr ? item.locationAr : item.locationEn}
                       image={item.image}
                       badge={item.type === 'sell' ? listT('sell') : listT('rent')}

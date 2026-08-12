@@ -20,6 +20,15 @@ const toArabicNumerals = (num: number | string): string => {
   return num.toString().replace(/[0-9]/g, w => arabicDigits[+w]);
 };
 
+const formatPriceWithCurrency = (price: number | string, currency: string | undefined, isAr: boolean): string => {
+  const numWithCommas = Number(price).toLocaleString('en-US');
+  const numPrice = isAr ? toArabicNumerals(numWithCommas) : numWithCommas;
+  const curr = (currency || 'USD').toUpperCase().trim();
+  if (curr === 'YER') return isAr ? `${numPrice} ريال يمني` : `${numPrice} YER`;
+  if (curr === 'SAR') return isAr ? `${numPrice} ريال سعودي` : `${numPrice} SAR`;
+  return isAr ? `${numPrice} دولار` : `$${numPrice}`;
+};
+
 interface ClientProps {
   item: ListingItem;
   locale: string;
@@ -330,7 +339,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
                 <div className="text-start sm:text-end shrink-0">
                   <div className="text-3xl font-extrabold text-deumah-green-700">
-                    {isAr ? `${toArabicNumerals(item.price)} دولار` : `$${item.price}`}
+                    {formatPriceWithCurrency(item.price, (item as any).currency, isAr)}
                     {item.periodEn && (
                       <span className="text-sm font-semibold text-deumah-gray-500">
                         {isAr ? ` / ${item.periodAr}` : ` / ${item.periodEn}`}
@@ -433,7 +442,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                       {t('totalPrice')} ({isAr ? toArabicNumerals(rentalDetails.daysCount) : rentalDetails.daysCount} {t('days')})
                     </div>
                     <div className="text-2xl font-extrabold text-deumah-green-700 mt-1">
-                      {isAr ? `${toArabicNumerals(rentalDetails.totalCost)} دولار` : `$${rentalDetails.totalCost}`}
+                      {formatPriceWithCurrency(rentalDetails.totalCost, (item as any).currency, isAr)}
                     </div>
                   </div>
                 ) : (
@@ -467,7 +476,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                 <div className="p-3 bg-deumah-gray-50 border border-deumah-gray-100 rounded-deumah-sm">
                   <div className="text-xs text-deumah-gray-500 font-bold uppercase">{isAr ? 'سعر البيع' : 'Selling Price'}</div>
                   <div className="text-2xl font-extrabold text-deumah-green-700 mt-1">
-                    {isAr ? `${toArabicNumerals(item.price)} دولار` : `$${item.price}`}
+                    {formatPriceWithCurrency(item.price, (item as any).currency, isAr)}
                   </div>
                 </div>
                 <button 

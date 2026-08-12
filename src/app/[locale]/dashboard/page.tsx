@@ -451,28 +451,37 @@ export default function DashboardPage() {
     }
 
     try {
-      const { data, error } = await supabase.from('messages').insert({
+      const { error } = await supabase.from('messages').insert({
         listing_id: thread.listing_id,
         sender_id: currentUser.id,
         receiver_id: thread.other_user_id,
         message: replyText
-      }).select().single();
+      });
 
       if (error) throw error;
-      if (data) {
-        // Optimistically update UI
-        setThreads(prev => prev.map(t => {
-          if (t.id === activeThreadId) {
-            return {
-              ...t,
-              messages: [...t.messages, data as unknown as ChatMessage],
-              last_message: data as unknown as ChatMessage
-            };
-          }
-          return t;
-        }).sort((a, b) => new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime()));
-        setReplyText('');
-      }
+      
+      // Optimistically update UI manually without relying on .select() response
+      const tempMsg: ChatMessage = {
+        id: `temp_${Date.now()}`,
+        listing_id: thread.listing_id,
+        sender_id: currentUser.id,
+        receiver_id: thread.other_user_id,
+        message: replyText,
+        created_at: new Date().toISOString()
+      };
+
+      setThreads(prev => prev.map(t => {
+        if (t.id === activeThreadId) {
+          return {
+            ...t,
+            messages: [...t.messages, tempMsg],
+            last_message: tempMsg
+          };
+        }
+        return t;
+      }).sort((a, b) => new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime()));
+      
+      setReplyText('');
     } catch (e) {
       console.error(e);
       triggerToast(isAr ? 'فشل إرسال الرسالة.' : 'Failed to send message.');

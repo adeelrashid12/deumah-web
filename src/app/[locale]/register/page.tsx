@@ -97,6 +97,20 @@ export default function RegisterPage() {
     }
   };
 
+  const handleOAuth = async (provider: 'google' | 'apple') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setErrorMsg(err.message || 'OAuth authentication failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-deumah-gray-50 text-deumah-navy-950 flex flex-col justify-between">
       <DeumahHeader />

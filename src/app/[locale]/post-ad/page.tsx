@@ -982,7 +982,7 @@ function PostAdForm() {
                   <p className="text-xs font-bold text-deumah-navy-950">
                     {videoFile ? (isAr ? 'تم رفع الفيديو' : 'Video Uploaded') : (isAr ? 'رفع فيديو قصير' : 'Upload Short Video')}
                   </p>
-                  <p className="text-[10px] text-deumah-gray-400 mt-1">{isAr ? 'اختياري، أقل من ١٠٠ ميجابايت' : 'Optional (Max 100MB)'}</p>
+                  <p className="text-[10px] text-deumah-gray-400 mt-1">{isAr ? '(اختياري) الحد الأقصى 50 ميجابايت' : 'Optional (Max 50MB)'}</p>
                 </div>
               </div>
             </div>

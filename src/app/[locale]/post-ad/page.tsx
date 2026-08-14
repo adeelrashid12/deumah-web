@@ -104,38 +104,129 @@ function PostAdForm() {
   // Validation / Error States
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Load draft if exists
+  const editId = searchParams.get('edit');
+  const [listingId, setListingId] = useState<string | null>(editId);
+
+  // Load draft from Supabase if ?edit=id exists
   useEffect(() => {
-    const savedDraft = localStorage.getItem('deumah_ad_draft');
-    if (savedDraft) {
-      try {
-        const draft = JSON.parse(savedDraft);
-        setTitle(draft.title || '');
-        setDescription(draft.description || '');
-        setPrice(draft.price || '');
-        setCategory(draft.category || 'cars');
-        setTransactionType(draft.transactionType || 'rent');
-        setCurrency(draft.currency || 'USD');
-        setGovernorate(draft.governorate || 'sanaa_city');
-        setArea(draft.area || '');
-      } catch (e) {}
+    async function loadListing() {
+      if (!editId) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('id', editId)
+        .eq('owner_id', user.id)
+        .single();
+        
+      if (data) {
+        setTitle(isAr ? data.title_ar : data.title_en || '');
+        setDescription(isAr ? data.description_ar : data.description_en || '');
+        setPrice(data.price?.toString() || '');
+        setCategory(data.category || 'cars');
+        setTransactionType(data.type || 'rent');
+        setCurrency(data.currency || 'USD');
+        setGovernorate(data.governorate || 'sanaa_city');
+        setItemCondition(data.condition || 'good');
+        
+        if (data.images && Array.isArray(data.images)) {
+          setPhotosList(data.images.map((url: string, i: number) => ({ id: `saved-${i}`, name: `Photo ${i+1}`, url })));
+        }
+        if (data.video_url) {
+          setVideoFile({ name: 'Saved Video', size: 'unknown', url: data.video_url });
+        }
+        
+        if (data.specifications) {
+          const s = data.specifications;
+          if (data.category === 'cars') {
+            setCarBrand(s.brand || ''); setCarModel(s.model || ''); setCarYear(s.year || ''); setCarTransmission(s.transmission || 'automatic'); setCarFuel(s.fuel || 'gasoline'); setCarMileage(s.mileage || '');
+          } else if (data.category === 'properties') {
+            setPropType(s.type || 'apartment'); setPropBedrooms(s.bedrooms || ''); setPropBathrooms(s.bathrooms || ''); setPropSize(s.area || ''); setPropFurnished(s.furnished || 'no');
+          } else if (data.category === 'wedding_halls') {
+            setHallCapacity(s.capacity || ''); setHallSound(s.soundSystem || 'yes'); setHallAC(s.ac || 'central'); setHallParking(s.parking || 'yes');
+          } else if (data.category === 'chalets') {
+            setChaletCapacity(s.capacity || ''); setChaletBedrooms(s.bedrooms || ''); setChaletPool(s.pool || 'yes'); setChaletOvernight(s.overnight || 'yes');
+          } else if (data.category === 'electronics') {
+            setElecBrand(s.brand || ''); setElecModel(s.model || ''); setElecWarranty(s.warranty || 'no');
+          } else if (data.category === 'tools') {
+            setToolsBrand(s.brand || ''); setToolsModel(s.model || '');
+          } else if (data.category === 'services') {
+            setServiceType(s.type || 'maintenance'); setServiceArea(s.area || ''); setServicePricing(s.pricingMethod || 'fixed');
+          }
+          if (s.contact) {
+            setContactCall(s.contact.call ?? true); setContactChat(s.contact.chat ?? true); setContactWhatsApp(s.contact.whatsapp ?? false);
+            setContactPhoneNum(s.contact.phoneNumber || ''); setContactWhatsAppNum(s.contact.whatsappNumber || '');
+          }
+        }
+      }
     }
-  }, []);
+    loadListing();
+  }, [editId, isAr]);
+
+  // Build Specs Helper
+  const buildSpecs = () => {
+    let specs: any = {};
+    if (category === 'cars') specs = { brand: carBrand, model: carModel, year: carYear, transmission: carTransmission, fuel: carFuel, mileage: carMileage };
+    else if (category === 'properties') specs = { type: propType, bedrooms: propBedrooms, bathrooms: propBathrooms, area: propSize, furnished: propFurnished };
+    else if (category === 'wedding_halls') specs = { capacity: hallCapacity, soundSystem: hallSound, ac: hallAC, parking: hallParking };
+    else if (category === 'chalets') specs = { capacity: chaletCapacity, bedrooms: chaletBedrooms, pool: chaletPool, overnight: chaletOvernight };
+    else if (category === 'electronics') specs = { brand: elecBrand, model: elecModel, warranty: elecWarranty };
+    else if (category === 'tools') specs = { brand: toolsBrand, model: toolsModel };
+    else if (category === 'services') specs = { type: serviceType, area: serviceArea, pricingMethod: servicePricing };
+    
+    specs.contact = { call: contactCall, chat: contactChat, whatsapp: contactWhatsApp, phoneNumber: contactPhoneNum, whatsappNumber: contactWhatsAppNum };
+    return specs;
+  };
 
   // Save Draft Functionality
-  const handleSaveDraft = () => {
-    const draftData = {
-      title,
-      description,
-      price,
-      category,
-      transactionType,
-      currency,
-      governorate,
-      area
-    };
-    localStorage.setItem('deumah_ad_draft', JSON.stringify(draftData));
-    alert(isAr ? 'تم حفظ الإعلان كمسودة بنجاح!' : 'Ad saved as draft successfully!');
+  const handleSaveDraft = async () => {
+    setUploadStatusMsg(isAr ? 'جاري حفظ المسودة...' : 'Saving draft...');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setErrorMsg(isAr ? 'يرجى تسجيل الدخول أولاً' : 'Please sign in first');
+        return;
+      }
+
+      const imageUrls = photosList.map(p => p.url);
+      
+      const payload = {
+        owner_id: user.id,
+        title_en: title || 'Draft Ad',
+        title_ar: title || 'إعلان مسودة',
+        description_en: description,
+        description_ar: description,
+        price: Number(price) || 0,
+        currency: currency,
+        category: category,
+        type: transactionType,
+        governorate: governorate,
+        images: imageUrls,
+        video_url: videoFile?.url || null,
+        specifications: buildSpecs(),
+        condition: itemCondition,
+        status: 'draft'
+      };
+
+      if (listingId) {
+        const { error } = await supabase.from('listings').update(payload).eq('id', listingId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from('listings').insert(payload).select().single();
+        if (error) throw error;
+        if (data) setListingId(data.id);
+      }
+      
+      setUploadStatusMsg('');
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 2500);
+      alert(isAr ? 'تم حفظ الإعلان كمسودة بنجاح!' : 'Draft saved successfully!');
+    } catch (err: any) {
+      setUploadStatusMsg('');
+      setErrorMsg(err.message || 'Error saving draft');
+    }
   };
 
   // Handle Photo Upload with dynamic simulated progress & HEIC support
@@ -184,7 +275,13 @@ function PostAdForm() {
     } catch (err: any) {
       setUploadProgress(null);
       setUploadStatusMsg('');
-      setErrorMsg(err.message || (isAr ? 'حدث خطأ أثناء رفع الصور.' : 'An error occurred during file upload.'));
+      let errMsg = err.message || (isAr ? 'حدث خطأ أثناء رفع الصور.' : 'An error occurred during file upload.');
+      if (errMsg.toLowerCase().includes('exceeded the maximum allowed size')) {
+        errMsg = isAr 
+          ? 'حجم الملف يتجاوز الحد الأقصى المسموح به في إعدادات الخادم.' 
+          : 'The file exceeded the maximum allowed size configured on the server.';
+      }
+      setErrorMsg(errMsg);
     }
   };
 
@@ -230,8 +327,8 @@ function PostAdForm() {
     const file = e.target.files[0];
     const fileSizeMB = file.size / (1024 * 1024);
 
-    if (fileSizeMB > 100) {
-      setErrorMsg(isAr ? 'حجم الفيديو يتجاوز ١٠٠ ميجابايت!' : 'Video size exceeds 100MB!');
+    if (fileSizeMB > 50) {
+      setErrorMsg(isAr ? 'حجم الفيديو يتجاوز ٥٠ ميجابايت!' : 'Video size exceeds 50MB!');
       return;
     }
     setErrorMsg('');
@@ -263,7 +360,13 @@ function PostAdForm() {
     } catch (err: any) {
       setUploadProgress(null);
       setUploadStatusMsg('');
-      setErrorMsg(err.message || (isAr ? 'حدث خطأ أثناء رفع الفيديو.' : 'An error occurred during video upload.'));
+      let errMsg = err.message || (isAr ? 'حدث خطأ أثناء رفع الفيديو.' : 'An error occurred during video upload.');
+      if (errMsg.toLowerCase().includes('exceeded the maximum allowed size')) {
+        errMsg = isAr 
+          ? 'حجم مقطع الفيديو يتجاوز الحد الأقصى المسموح به في إعدادات الخادم.' 
+          : 'The video exceeded the maximum allowed size configured on the server.';
+      }
+      setErrorMsg(errMsg);
     }
   };
 
@@ -318,35 +421,41 @@ function PostAdForm() {
 
       const imageUrls = photosList.map(p => p.url);
 
-      const { data, error } = await supabase
-        .from('listings')
-        .insert({
-          owner_id: user?.id,
-          title_en: title,
-          title_ar: title,
-          description_en: description,
-          description_ar: description,
-          price: Number(price),
-          currency: currency,
-          category: category,
-          type: transactionType,
-          governorate: governorate,
-          images: imageUrls,
-          video_url: videoFile?.url || null,
-          specifications: specs,
-          condition: itemCondition,
-          status: 'pending'
-        });
+      const payload = {
+        owner_id: user?.id,
+        title_en: title,
+        title_ar: title,
+        description_en: description,
+        description_ar: description,
+        price: Number(price),
+        currency: currency,
+        category: category,
+        type: transactionType,
+        governorate: governorate,
+        images: imageUrls,
+        video_url: videoFile?.url || null,
+        specifications: specs,
+        condition: itemCondition,
+        status: 'pending'
+      };
 
-      if (error) throw error;
+      if (listingId) {
+        const { error } = await supabase
+          .from('listings')
+          .update(payload)
+          .eq('id', listingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('listings')
+          .insert(payload);
+        if (error) throw error;
+      }
 
       setUploadProgress(null);
       setUploadStatusMsg('');
       setModerationStatus('approved');
       setShowSuccessModal(true);
-
-      // Clear draft
-      localStorage.removeItem('deumah_ad_draft');
     } catch (err: any) {
       setUploadProgress(null);
       setUploadStatusMsg('');
@@ -448,11 +557,15 @@ function PostAdForm() {
               >
                 <option value="cars">{isAr ? '🚗 سيارات' : '🚗 Cars'}</option>
                 <option value="properties">{isAr ? '🏠 عقارات' : '🏠 Properties'}</option>
+                <option value="electronics">{isAr ? '📱 إلكترونيات' : '📱 Electronics'}</option>
+                <option value="furniture">{isAr ? '🛋️ أثاث' : '🛋️ Furniture'}</option>
+                <option value="services">{isAr ? '🔧 خدمات' : '🔧 Services'}</option>
+                <option value="tools">{isAr ? '🛠️ أدوات ومعدات' : '🛠️ Tools'}</option>
+                <option value="fashion">{isAr ? '👕 أزياء وموضة' : '👕 Fashion'}</option>
+                <option value="kids">{isAr ? '🧸 مستلزمات أطفال' : '🧸 Kids & Babies'}</option>
+                <option value="hobbies">{isAr ? '🎨 هوايات' : '🎨 Hobbies'}</option>
                 <option value="wedding_halls">{isAr ? '💍 قاعات أفراح' : '💍 Wedding Halls'}</option>
                 <option value="chalets">{isAr ? '🏡 شاليهات' : '🏡 Chalets'}</option>
-                <option value="electronics">{isAr ? '📱 إلكترونيات' : '📱 Electronics'}</option>
-                <option value="tools">{isAr ? '🛠️ أدوات ومعدات' : '🛠️ Tools'}</option>
-                <option value="services">{isAr ? '🔧 خدمات' : '🔧 Services'}</option>
               </select>
             </div>
           </div>
@@ -544,7 +657,10 @@ function PostAdForm() {
                     className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
                   >
                     <option value="apartment">{isAr ? 'شقة' : 'Apartment'}</option>
+                    <option value="furnished_apartment">{isAr ? 'شقة مفروشة' : 'Furnished Apartment'}</option>
+                    <option value="house">{isAr ? 'بيت' : 'House'}</option>
                     <option value="villa">{isAr ? 'فيلا' : 'Villa'}</option>
+                    <option value="building">{isAr ? 'عمارة' : 'Building'}</option>
                     <option value="office">{isAr ? 'مكتب' : 'Office'}</option>
                     <option value="land">{isAr ? 'أرض' : 'Land'}</option>
                   </select>
@@ -1194,18 +1310,25 @@ function PostAdForm() {
             </label>
           </div>
 
-          {/* Action buttons (Preview & Publish) */}
-          <div className="flex gap-4">
+          {/* Action buttons (Save Draft, Preview & Publish) */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="sm:w-1/3 bg-white hover:bg-deumah-gray-50 text-deumah-gray-700 border border-deumah-gray-300 font-bold py-3.5 rounded-deumah font-heading tracking-wide transition shadow-sm cursor-pointer text-center text-xs sm:text-sm"
+            >
+              💾 {isAr ? 'حفظ كمسودة' : 'Save as Draft'}
+            </button>
             <button
               type="button"
               onClick={() => setShowPreviewModal(true)}
-              className="flex-1 bg-white hover:bg-deumah-gray-50 text-deumah-navy-950 border border-deumah-gray-300 font-bold py-3.5 rounded-deumah font-heading tracking-wide transition shadow-sm cursor-pointer text-center"
+              className="sm:w-1/3 bg-white hover:bg-deumah-gray-50 text-deumah-navy-950 border border-deumah-gray-300 font-bold py-3.5 rounded-deumah font-heading tracking-wide transition shadow-sm cursor-pointer text-center text-xs sm:text-sm"
             >
               👁️ {isAr ? 'معاينة الإعلان' : 'Preview Ad'}
             </button>
             <button
               type="submit"
-              className="flex-1 bg-deumah-green-700 hover:bg-deumah-green-600 text-white font-bold py-3.5 rounded-deumah font-heading tracking-wide transition shadow-sm cursor-pointer text-center"
+              className="sm:w-1/3 bg-deumah-green-700 hover:bg-deumah-green-600 text-white font-bold py-3.5 rounded-deumah font-heading tracking-wide transition shadow-sm cursor-pointer text-center text-xs sm:text-sm"
             >
               🚀 {isAr ? 'انشر الإعلان الآن' : 'Publish Ad Now'}
             </button>
@@ -1257,12 +1380,16 @@ function PostAdForm() {
                     {title || (isAr ? 'عنوان تجريبي للإعلان' : 'Draft Ad Title')}
                   </h4>
                   <p className="text-xs font-medium text-deumah-gray-500 mt-1">
-                    📍 {isAr ? 'صنعاء • حدة' : 'Sana\'a • Hadda'}
+                    📍 {isAr ? (
+                      `${governorate === 'sanaa_city' ? 'أمانة العاصمة' : governorate === 'sanaa' ? 'صنعاء' : governorate === 'aden' ? 'عدن' : governorate === 'taiz' ? 'تعز' : governorate === 'hadhramaut' ? 'حضرموت' : governorate === 'al_hudaydah' ? 'الحديدة' : governorate === 'ibb' ? 'إب' : governorate === 'amran' ? 'عمران' : governorate === 'dhamar' ? 'ذمار' : governorate === 'al_jawf' ? 'الجوف' : governorate === 'hajjah' ? 'حجة' : governorate === 'shabwah' ? 'شبوة' : governorate === 'marib' ? 'مأرب' : governorate === 'al_bayda' ? 'البيضاء' : governorate === 'saadah' ? 'صعدة' : governorate === 'al_mahrah' ? 'المهرة' : governorate === 'abyan' ? 'أبين' : governorate === 'lahij' ? 'لحج' : governorate === 'al_dhale' ? 'الضالع' : governorate === 'al_mahwit' ? 'المحويت' : governorate === 'raymah' ? 'ريمة' : governorate === 'socotra' ? 'سقطرى' : governorate} ${area ? `• ${area}` : ''}`
+                    ) : (
+                      `${governorate === 'sanaa_city' ? "Sana'a City" : governorate === 'sanaa' ? "Sana'a" : governorate === 'aden' ? 'Aden' : governorate === 'taiz' ? 'Taiz' : governorate === 'hadhramaut' ? 'Hadhramaut' : governorate === 'al_hudaydah' ? 'Al Hudaydah' : governorate === 'ibb' ? 'Ibb' : governorate === 'amran' ? 'Amran' : governorate === 'dhamar' ? 'Dhamar' : governorate === 'al_jawf' ? 'Al Jawf' : governorate === 'hajjah' ? 'Hajjah' : governorate === 'shabwah' ? 'Shabwah' : governorate === 'marib' ? 'Marib' : governorate === 'al_bayda' ? 'Al Bayda' : governorate === 'saadah' ? 'Saadah' : governorate === 'al_mahrah' ? 'Al Mahrah' : governorate === 'abyan' ? 'Abyan' : governorate === 'lahij' ? 'Lahij' : governorate === 'al_dhale' ? 'Al Dhale' : governorate === 'al_mahwit' ? 'Al Mahwit' : governorate === 'raymah' ? 'Raymah' : governorate === 'socotra' ? 'Socotra' : governorate} ${area ? `• ${area}` : ''}`
+                    )}
                   </p>
                 </div>
                 <div className="text-right">
                   <span className="text-xl font-extrabold text-deumah-green-700">
-                    {currency === 'USD' ? '$' : 'YER '}{price || '0'}
+                    {currency === 'USD' ? '$' : 'YER '}{price ? Number(price).toLocaleString() : '0'}
                   </span>
                   {transactionType === 'rent' && (
                     <span className="text-[10px] text-deumah-gray-500 font-bold block mt-0.5">

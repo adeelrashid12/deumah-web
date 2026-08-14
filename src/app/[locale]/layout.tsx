@@ -5,6 +5,7 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Poppins } from 'next/font/google';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 
 const poppins = Poppins({
   weight: ['300', '400', '500', '600', '700', '800', '900'],
@@ -29,8 +30,11 @@ export default async function LocaleLayout({children, params}: Readonly<{childre
 
   return (
     <html lang={locale} dir={dir} className={`${poppins.className} h-full antialiased overflow-x-hidden`} suppressHydrationWarning>
-      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] overflow-x-hidden" suppressHydrationWarning>
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] overflow-x-hidden pb-16 md:pb-0" suppressHydrationWarning>
+        <NextIntlClientProvider messages={messages}>
+          {children}
+          <MobileBottomNav />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

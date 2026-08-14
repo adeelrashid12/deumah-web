@@ -137,11 +137,10 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
     try {
       if (currentUser) {
-        const { error } = await supabase.from('messages').insert({
-          listing_id: item.id,
-          sender_id: currentUser.id,
-          receiver_id: (item as any).owner_id || (item as any).ownerId || null,
-          message: messageText
+        const { error } = await supabase.rpc('send_chat_message', {
+          p_listing_id: item.id,
+          p_receiver_id: (item as any).owner_id || (item as any).ownerId || null,
+          p_message: messageText
         });
 
         if (error) {
@@ -453,13 +452,56 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
                 <button 
                   disabled={!rentalDetails}
+                  onClick={async () => {
+                    if (!rentalDetails) return;
+                    if (!currentUser) {
+                      alert(isAr ? 'يجب تسجيل الدخول لتقديم طلب حجز' : 'You must be logged in to request a booking');
+                      return;
+                    }
+                    
+                    const amount = rentalDetails.totalCost;
+                    const msg = isAr 
+                      ? `طلب حجز تأجير من ${startDate} إلى ${endDate} (${rentalDetails.daysCount} أيام) بإجمالي ${amount} ${(item as any).currency || 'USD'}.`
+                      : `Rental booking request from ${startDate} to ${endDate} (${rentalDetails.daysCount} days) for a total of ${amount} ${(item as any).currency || 'USD'}.`;
+                    
+                    try {
+                      const sellerId = (item as any).owner_id || (item as any).ownerId;
+                      const { error } = await supabase.from('offers').insert({
+                        listing_id: item.id,
+                        buyer_id: currentUser.id,
+                        seller_id: sellerId,
+                        amount: amount,
+                        message: msg
+                      });
+
+                      if (error) throw error;
+                      
+                      if (sellerId) {
+                        await supabase.from('notifications').insert({
+                          user_id: sellerId,
+                          type: 'offer',
+                          title_en: 'New Rental Booking Request!',
+                          title_ar: 'طلب حجز تأجير جديد!',
+                          message_en: msg,
+                          message_ar: msg,
+                          listing_id: item.id,
+                          read: false
+                        });
+                      }
+                      
+                      setOfferToast(true);
+                      setTimeout(() => setOfferToast(false), 3000);
+                    } catch (err: any) {
+                      alert(`Error: ${err.message}`);
+                    }
+                  }}
                   className={`w-full py-3 rounded-deumah-sm font-bold text-sm text-center transition ${
                     rentalDetails 
                       ? 'bg-deumah-green-700 text-white hover:bg-deumah-green-600 cursor-pointer shadow-sm'
                       : 'bg-deumah-gray-200 text-deumah-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  {isAr ? 'احجز الآن' : 'Book Rental Now'}
+                  {isAr ? 'إرسال طلب حجز' : 'Request Booking'}
                 </button>
               </div>
             ) : (

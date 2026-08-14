@@ -36,8 +36,8 @@ async function getListing(id: string) {
         periodEn: data.type === 'rent' ? 'Day' : '',
         periodAr: data.type === 'rent' ? 'يوم' : '',
         type: data.type,
-        locationEn: "Sana'a",
-        locationAr: data.governorate === 'sanaa_city' ? 'أمانة العاصمة' : 'صنعاء',
+        locationEn: data.governorate === 'sanaa_city' ? "Sana'a City" : data.governorate === 'sanaa' ? "Sana'a" : data.governorate === 'aden' ? 'Aden' : data.governorate === 'taiz' ? 'Taiz' : data.governorate === 'hadhramaut' ? 'Hadhramaut' : data.governorate === 'al_hudaydah' ? 'Al Hudaydah' : data.governorate === 'ibb' ? 'Ibb' : data.governorate === 'amran' ? 'Amran' : data.governorate === 'dhamar' ? 'Dhamar' : data.governorate === 'al_jawf' ? 'Al Jawf' : data.governorate === 'hajjah' ? 'Hajjah' : data.governorate === 'shabwah' ? 'Shabwah' : data.governorate === 'marib' ? 'Marib' : data.governorate === 'al_bayda' ? 'Al Bayda' : data.governorate === 'saadah' ? 'Saadah' : data.governorate === 'al_mahrah' ? 'Al Mahrah' : data.governorate === 'abyan' ? 'Abyan' : data.governorate === 'lahij' ? 'Lahij' : data.governorate === 'al_dhale' ? 'Al Dhale' : data.governorate === 'al_mahwit' ? 'Al Mahwit' : data.governorate === 'raymah' ? 'Raymah' : data.governorate === 'socotra' ? 'Socotra' : data.governorate,
+        locationAr: data.governorate === 'sanaa_city' ? 'أمانة العاصمة' : data.governorate === 'sanaa' ? 'صنعاء' : data.governorate === 'aden' ? 'عدن' : data.governorate === 'taiz' ? 'تعز' : data.governorate === 'hadhramaut' ? 'حضرموت' : data.governorate === 'al_hudaydah' ? 'الحديدة' : data.governorate === 'ibb' ? 'إب' : data.governorate === 'amran' ? 'عمران' : data.governorate === 'dhamar' ? 'ذمار' : data.governorate === 'al_jawf' ? 'الجوف' : data.governorate === 'hajjah' ? 'حجة' : data.governorate === 'shabwah' ? 'شبوة' : data.governorate === 'marib' ? 'مأرب' : data.governorate === 'al_bayda' ? 'البيضاء' : data.governorate === 'saadah' ? 'صعدة' : data.governorate === 'al_mahrah' ? 'المهرة' : data.governorate === 'abyan' ? 'أبين' : data.governorate === 'lahij' ? 'لحج' : data.governorate === 'al_dhale' ? 'الضالع' : data.governorate === 'al_mahwit' ? 'المحويت' : data.governorate === 'raymah' ? 'ريمة' : data.governorate === 'socotra' ? 'سقطرى' : data.governorate,
         descriptionEn: data.description_en || '',
         descriptionAr: data.description_ar || '',
         specifications: data.specifications || {},
@@ -57,7 +57,7 @@ async function getListing(id: string) {
                   automatic: 'أوتوماتيك', manual: 'عادي',
                   gasoline: 'بنزين', diesel: 'ديزل', hybrid: 'هايبرد', electric: 'كهربائي',
                   yes: 'نعم', no: 'لا',
-                  apartment: 'شقة', villa: 'فيلا', office: 'مكتب', land: 'أرض',
+                  apartment: 'شقة', furnished_apartment: 'شقة مفروشة', house: 'بيت', villa: 'فيلا', building: 'عمارة', office: 'مكتب', land: 'أرض',
                   central: 'مركزي', split: 'سبليت', none: 'بدون',
                   fixed: 'ثابت', hourly: 'بالساعة', daily: 'باليوم', negotiable: 'حسب الاتفاق'
                 };

@@ -15,7 +15,7 @@ interface ListingItem {
   price: string;
   category: string;
   type: 'sell' | 'rent';
-  status: 'active' | 'paused' | 'sold' | 'rented' | 'approved' | 'pending' | 'rejected';
+  status: 'active' | 'paused' | 'sold' | 'rented' | 'approved' | 'pending' | 'rejected' | 'draft';
   views: number;
   favorites: number;
 }
@@ -89,11 +89,11 @@ export default function DashboardPage() {
 
   // Tabs navigation state
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'listings' | 'messages' | 'offers' | 'saved' | 'support' | 'profile' | 'settings'>('listings');
+  const [activeTab, setActiveTab] = useState<'listings' | 'drafts' | 'messages' | 'offers' | 'saved' | 'support' | 'profile' | 'settings'>('listings');
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['listings', 'messages', 'offers', 'saved', 'support', 'profile', 'settings'].includes(tab)) {
+    if (tab && ['listings', 'drafts', 'messages', 'offers', 'saved', 'support', 'profile', 'settings'].includes(tab)) {
       setActiveTab(tab as any);
     }
   }, [searchParams]);
@@ -171,6 +171,7 @@ export default function DashboardPage() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [governorate, setGovernorate] = useState('sanaa_city');
 
   // App settings state
@@ -181,8 +182,10 @@ export default function DashboardPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
-  const triggerToast = (msg: string) => {
+  const [toastType, setToastType] = useState<'success'|'error'>('success');
+  const triggerToast = (msg: string, type: 'success'|'error' = 'success') => {
     setToastMsg(msg);
+    setToastType(type);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 2500);
   };
@@ -193,6 +196,8 @@ export default function DashboardPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        setCurrentUser(user);
+        setEmail(user.email || '');
         // 0. Parallelize initial basic data fetching
         const [
           { data: myBlocks },
@@ -342,8 +347,16 @@ export default function DashboardPage() {
     loadDashboardData();
 
     let channel: any;
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    
+    async function setupRealtime() {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      
+      // Remove any existing channel with this name to prevent strict mode errors
+      supabase.getChannels().forEach(c => {
+         if (c.topic === 'realtime:chat') supabase.removeChannel(c);
+      });
+
       channel = supabase.channel('realtime:chat')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
           const newMsg = payload.new as any;
@@ -368,7 +381,8 @@ export default function DashboardPage() {
           }
         })
         .subscribe();
-    });
+    }
+    setupRealtime();
 
     return () => {
       if (channel) {
@@ -451,39 +465,18 @@ export default function DashboardPage() {
     }
 
     try {
-      const { error } = await supabase.from('messages').insert({
-        listing_id: thread.listing_id,
-        sender_id: currentUser.id,
-        receiver_id: thread.other_user_id,
-        message: replyText
+      const { error } = await supabase.rpc('send_chat_message', {
+        p_listing_id: thread.listing_id,
+        p_receiver_id: thread.other_user_id,
+        p_message: replyText
       });
 
       if (error) throw error;
       
-      // Optimistically update UI manually without relying on .select() response
-      const tempMsg: ChatMessage = {
-        id: `temp_${Date.now()}`,
-        listing_id: thread.listing_id,
-        sender_id: currentUser.id,
-        receiver_id: thread.other_user_id,
-        message: replyText,
-        created_at: new Date().toISOString()
-      };
-
-      setThreads(prev => prev.map(t => {
-        if (t.id === activeThreadId) {
-          return {
-            ...t,
-            messages: [...t.messages, tempMsg],
-            last_message: tempMsg
-          };
-        }
-        return t;
-      }).sort((a, b) => new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime()));
-      
       setReplyText('');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert('RPC Error: ' + (e.message || JSON.stringify(e)));
       triggerToast(isAr ? 'فشل إرسال الرسالة.' : 'Failed to send message.');
     }
   };
@@ -531,7 +524,7 @@ export default function DashboardPage() {
       setEditingItem(null);
       triggerToast(isAr ? 'تم تعديل تفاصيل الإعلان بنجاح!' : 'Listing details updated successfully!');
     } catch (err: any) {
-      triggerToast(err.message || 'Error updating listing');
+      triggerToast(err.message || 'Error updating listing', 'error');
     }
   };
 
@@ -556,7 +549,7 @@ export default function DashboardPage() {
           : (nextStatus === 'approved' ? 'Listing resumed & published live!' : 'Listing paused successfully!')
       );
     } catch (err: any) {
-      triggerToast(err.message || 'Error occurred');
+      triggerToast(err.message || 'Error occurred', 'error');
     }
   };
 
@@ -578,7 +571,7 @@ export default function DashboardPage() {
           : (type === 'sell' ? 'Listing marked as Sold!' : 'Listing marked as Rented!')
       );
     } catch (err: any) {
-      triggerToast(err.message || 'Error occurred');
+      triggerToast(err.message || 'Error occurred', 'error');
     }
   };
 
@@ -594,7 +587,7 @@ export default function DashboardPage() {
       setListingsList(prev => prev.map(l => l.id === id ? { ...l, status: 'active' } : l));
       triggerToast(isAr ? 'تم إعادة نشر وتجديد الإعلان بنجاح!' : 'Listing renewed & republished successfully!');
     } catch (err: any) {
-      triggerToast(err.message || 'Error occurred');
+      triggerToast(err.message || 'Error occurred', 'error');
     }
   };
 
@@ -610,7 +603,7 @@ export default function DashboardPage() {
       setListingsList(prev => prev.filter(l => l.id !== id));
       triggerToast(isAr ? 'تم حذف الإعلان بنجاح!' : 'Listing deleted successfully!');
     } catch (err: any) {
-      triggerToast(err.message || 'Error occurred');
+      triggerToast(err.message || 'Error occurred', 'error');
     }
   };
 
@@ -667,7 +660,7 @@ export default function DashboardPage() {
 
       triggerToast(isAr ? 'تم تكرار الإعلان بنجاح كنسخة جديدة!' : 'Listing duplicated successfully as a new copy!');
     } catch (err: any) {
-      triggerToast(err.message || 'Error occurred');
+      triggerToast(err.message || 'Error occurred', 'error');
     }
   };
 
@@ -687,7 +680,7 @@ export default function DashboardPage() {
           : (newStatus === 'accepted' ? 'Offer Accepted!' : 'Offer Rejected!')
       );
     } catch (err: any) {
-      triggerToast(err.message || 'Error occurred');
+      triggerToast(err.message || 'Error occurred', 'error');
     }
   };
 
@@ -718,6 +711,17 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      if (email && email !== user.email) {
+        const { error: emailErr } = await supabase.auth.updateUser({ email });
+        if (emailErr) throw emailErr;
+      }
+
+      if (newPassword) {
+        const { error: passErr } = await supabase.auth.updateUser({ password: newPassword });
+        if (passErr) throw passErr;
+        setNewPassword('');
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -728,9 +732,9 @@ export default function DashboardPage() {
         .eq('id', user.id);
 
       if (error) throw error;
-      triggerToast(isAr ? 'تم تحديث الملف الشخصي بنجاح!' : 'Profile updated successfully!');
+      triggerToast(isAr ? 'تم تحديث الملف الشخصي بنجاح!' : 'Profile updated successfully!', 'success');
     } catch (err: any) {
-      triggerToast(err.message || 'Error occurred');
+      triggerToast(err.message || 'Error occurred', 'error');
     }
   };
 
@@ -792,13 +796,55 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Dashboard Grid Layout */}
+        {/* Quick Access Grid (Mobile Only) */}
+        <div className="mb-8 md:hidden">
+          <h2 className="text-xl font-extrabold text-deumah-navy-950 tracking-tight font-heading mb-4">
+            {isAr ? 'وصول سريع' : 'Quick Access'}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[
+              { id: 'listings', icon: '🚗', labelEn: 'My Listings', labelAr: 'إعلاناتي', subEn: 'Manage your ads', subAr: 'إدارة إعلاناتك' },
+              { id: 'drafts', icon: '📝', labelEn: 'My Drafts', labelAr: 'مسوداتي', subEn: 'Incomplete ads', subAr: 'الإعلانات غير المكتملة' },
+              { id: 'messages', icon: '💬', labelEn: 'Messages', labelAr: 'الرسائل', subEn: 'Chat with buyers', subAr: 'التواصل مع المشتريين' },
+              { id: 'offers', icon: '🏷️', labelEn: 'Offers', labelAr: 'العروض', subEn: 'Review offers', subAr: 'مراجعة العروض' },
+              { id: 'saved', icon: '⭐', labelEn: 'Favorites', labelAr: 'المفضلة', subEn: 'Saved favorites', subAr: 'الإعلانات المفضلة' },
+              { id: 'support', icon: '🎧', labelEn: 'Support Tickets', labelAr: 'تذاكر الدعم', subEn: 'Get help', subAr: 'الحصول على مساعدة' },
+              { id: 'profile', icon: '👤', labelEn: 'Profile Info', labelAr: 'الملف الشخصي', subEn: 'Account details', subAr: 'تفاصيل الحساب' },
+              { id: 'settings', icon: '⚙️', labelEn: 'App Settings', labelAr: 'الإعدادات', subEn: 'Preferences', subAr: 'تفضيلات التطبيق' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as never)}
+                className={`bg-white rounded-deumah border p-4 shadow-xs hover:shadow-sm transition flex items-center justify-between group cursor-pointer text-left rtl:text-right ${
+                  activeTab === tab.id ? 'border-deumah-green-500 bg-deumah-green-50/30' : 'border-deumah-gray-200 hover:border-deumah-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${activeTab === tab.id ? 'bg-deumah-green-100 text-deumah-green-700' : 'bg-deumah-gray-50 text-deumah-gray-600 group-hover:bg-deumah-gray-100'}`}>
+                    {tab.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-extrabold text-deumah-navy-950 mb-0.5">{isAr ? tab.labelAr : tab.labelEn}</h3>
+                    <p className="text-[10px] text-deumah-gray-500 font-medium">{isAr ? tab.subAr : tab.subEn}</p>
+                  </div>
+                </div>
+                <svg className="w-4 h-4 text-deumah-gray-400 rtl:rotate-180 group-hover:text-deumah-navy-950 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Dashboard Grid Layout (Responsive) */}
         <div className="grid gap-6 md:grid-cols-[220px_1fr] items-start">
-          
-          {/* Sidebar Tabs */}
-          <aside className="bg-white rounded-deumah border border-deumah-gray-200 p-3 shadow-sm flex flex-row overflow-x-auto md:flex-col gap-1.5 scrollbar-none snap-x snap-mandatory">
+
+          {/* Sidebar Tabs (Desktop Only) */}
+          <aside className="hidden md:flex bg-white rounded-deumah border border-deumah-gray-200 p-3 shadow-sm flex-col gap-1.5">
             {[
               { id: 'listings', labelEn: '🚗 My Listings', labelAr: '🚗 إعلاناتي' },
+              { id: 'drafts', labelEn: '📝 My Drafts', labelAr: '📝 مسوداتي' },
               { id: 'messages', labelEn: '💬 Messages', labelAr: '💬 الرسائل' },
               { id: 'offers', labelEn: '🤝 Offers', labelAr: '🤝 العروض' },
               { id: 'saved', labelEn: '⭐ Saved Listings', labelAr: '⭐ المحفوظات' },
@@ -810,7 +856,7 @@ export default function DashboardPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as never)}
-                className={`w-full text-left rtl:text-right shrink-0 md:w-auto px-4 py-2.5 rounded-deumah-sm text-xs font-bold transition flex items-center gap-2.5 ${
+                className={`w-full text-left rtl:text-right px-4 py-2.5 rounded-deumah-sm text-xs font-bold transition flex items-center gap-2.5 ${
                   activeTab === tab.id
                     ? 'bg-deumah-green-700 text-white shadow-sm'
                     : 'bg-transparent text-deumah-gray-700 hover:bg-deumah-gray-50'
@@ -832,12 +878,12 @@ export default function DashboardPage() {
                 </h2>
 
                 <div className="border border-deumah-gray-200 rounded-deumah overflow-hidden divide-y divide-deumah-gray-200">
-                  {listingsList.length === 0 ? (
+                  {listingsList.filter(l => l.status !== 'draft').length === 0 ? (
                     <div className="p-8 text-center text-xs text-deumah-gray-400 font-medium">
                       {isAr ? 'لا يوجد لديك إعلانات حالياً.' : 'You have no listings yet.'}
                     </div>
                   ) : (
-                    listingsList.map(item => (
+                    listingsList.filter(l => l.status !== 'draft').map(item => (
                       <div key={item.id} className="p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -932,6 +978,74 @@ export default function DashboardPage() {
                             type="button"
                             onClick={() => handleDelete(item.id)}
                             className="px-2.5 py-1.5 border border-red-200 text-red-600 rounded hover:bg-red-50 cursor-pointer"
+                          >
+                            🗑️ {isAr ? 'حذف' : 'Delete'}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* MY DRAFTS TAB */}
+            {activeTab === 'drafts' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-md font-bold text-deumah-navy-950 font-heading">
+                    {isAr ? 'مسودات الإعلانات' : 'My Draft Listings'}
+                  </h2>
+                  <Link
+                    href="/post-ad"
+                    className="bg-deumah-green-700 hover:bg-deumah-green-600 text-white font-bold px-3 py-1.5 rounded-deumah-sm text-xs transition shadow-xs"
+                  >
+                    ➕ {isAr ? 'مسودة جديدة' : 'New Draft'}
+                  </Link>
+                </div>
+
+                <div className="border border-deumah-gray-200 rounded-deumah overflow-hidden divide-y divide-deumah-gray-200">
+                  {listingsList.filter(l => l.status === 'draft').length === 0 ? (
+                    <div className="p-8 text-center text-xs text-deumah-gray-400 font-medium space-y-2">
+                      <p>📝 {isAr ? 'لا توجد مسودات محفوظة حالياً.' : 'You have no saved drafts.'}</p>
+                      <p className="text-[11px] text-deumah-gray-400">
+                        {isAr ? 'يمكنك البدء بإنشاء إعلان وحفظه كمسودة للرجوع إليه لاحقاً.' : 'Start creating an ad and tap "Save as Draft" to continue later.'}
+                      </p>
+                    </div>
+                  ) : (
+                    listingsList.filter(l => l.status === 'draft').map(item => (
+                      <div key={item.id} className="p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white hover:bg-deumah-gray-50/50 transition">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-extrabold text-deumah-navy-950">
+                              {item.titleEn || item.titleAr || (isAr ? 'مسودة إعلان بدون عنوان' : 'Untitled Draft')}
+                            </h3>
+                            <span className="text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border bg-amber-50 text-amber-700 border-amber-200">
+                              {isAr ? 'مسودة' : 'Draft'}
+                            </span>
+                            <span className="text-[9px] font-bold bg-deumah-navy-50 text-deumah-navy-900 px-2 py-0.5 rounded">
+                              {item.type === 'sell' ? (isAr ? 'للبيع' : 'For Sale') : (isAr ? 'للإيجار' : 'For Rent')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] font-semibold text-deumah-gray-400">
+                            <span>{isAr ? (catT[item.category] || item.category) : item.category}</span>
+                            <span>•</span>
+                            <span className="text-deumah-green-700 font-bold">{formatPrice(item.price, isAr)}</span>
+                          </div>
+                        </div>
+
+                        {/* Actions for Drafts */}
+                        <div className="flex items-center gap-2 flex-wrap text-[11px] font-extrabold self-stretch lg:self-auto justify-end">
+                          <Link
+                            href={`/post-ad?edit=${item.id}`}
+                            className="px-3 py-1.5 bg-deumah-green-700 hover:bg-deumah-green-600 text-white rounded font-bold transition shadow-xs flex items-center gap-1"
+                          >
+                            ✏️ {isAr ? 'متابعة التعديل والنشر' : 'Continue & Publish'}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            className="px-3 py-1.5 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 rounded font-bold transition shadow-xs flex items-center gap-1"
                           >
                             🗑️ {isAr ? 'حذف' : 'Delete'}
                           </button>
@@ -1350,11 +1464,26 @@ export default function DashboardPage() {
                       type="email"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      className="w-full text-xs border border-deumah-gray-200 rounded px-3 py-2 outline-none bg-deumah-gray-50 text-deumah-gray-400 cursor-not-allowed"
-                      disabled
+                      className="w-full text-xs border border-deumah-gray-200 rounded px-3 py-2 outline-none focus:border-deumah-green-600 bg-white text-deumah-navy-950"
+                      required
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-deumah-gray-400 uppercase tracking-wider mb-1.5">
+                      {isAr ? 'تغيير كلمة المرور (اختياري)' : 'New Password (Optional)'}
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder={isAr ? 'اتركه فارغاً إذا لم ترغب بالتغيير' : 'Leave empty to keep current'}
+                      className="w-full text-xs border border-deumah-gray-200 rounded px-3 py-2 outline-none focus:border-deumah-green-600 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-[10px] font-extrabold text-deumah-gray-400 uppercase tracking-wider mb-1.5">
                       {isAr ? 'المحافظة' : 'Governorate'}
@@ -1368,8 +1497,24 @@ export default function DashboardPage() {
                       <option value="sanaa">{isAr ? 'محافظة صنعاء' : 'Sana\'a Governorate'}</option>
                       <option value="aden">{isAr ? 'عدن' : 'Aden'}</option>
                       <option value="taiz">{isAr ? 'تعز' : 'Taiz'}</option>
-                      <option value="ibb">{isAr ? 'إب' : 'Ibb'}</option>
                       <option value="hadhramaut">{isAr ? 'حضرموت' : 'Hadhramaut'}</option>
+                      <option value="al_hudaydah">{isAr ? 'الحديدة' : 'Al Hudaydah'}</option>
+                      <option value="ibb">{isAr ? 'إب' : 'Ibb'}</option>
+                      <option value="amran">{isAr ? 'عمران' : 'Amran'}</option>
+                      <option value="dhamar">{isAr ? 'ذمار' : 'Dhamar'}</option>
+                      <option value="al_jawf">{isAr ? 'الجوف' : 'Al Jawf'}</option>
+                      <option value="hajjah">{isAr ? 'حجة' : 'Hajjah'}</option>
+                      <option value="shabwah">{isAr ? 'شبوة' : 'Shabwah'}</option>
+                      <option value="marib">{isAr ? 'مأرب' : 'Marib'}</option>
+                      <option value="al_bayda">{isAr ? 'البيضاء' : 'Al Bayda'}</option>
+                      <option value="saadah">{isAr ? 'صعدة' : 'Saadah'}</option>
+                      <option value="al_mahrah">{isAr ? 'المهرة' : 'Al Mahrah'}</option>
+                      <option value="abyan">{isAr ? 'أبين' : 'Abyan'}</option>
+                      <option value="lahij">{isAr ? 'لحج' : 'Lahij'}</option>
+                      <option value="al_dhale">{isAr ? 'الضالع' : 'Al Dhale'}</option>
+                      <option value="al_mahwit">{isAr ? 'المحويت' : 'Al Mahwit'}</option>
+                      <option value="raymah">{isAr ? 'ريمة' : 'Raymah'}</option>
+                      <option value="socotra">{isAr ? 'سقطرى' : 'Socotra'}</option>
                     </select>
                   </div>
                 </div>
@@ -1445,7 +1590,8 @@ export default function DashboardPage() {
                                       <h3 className="text-sm font-bold text-deumah-navy-950 mb-4">{isAr ? 'فتح تذكرة جديدة' : 'Open a New Ticket'}</h3>
                                       <form onSubmit={async (e) => {
                                         e.preventDefault();
-                                        if (!newTicketSubject.trim() || !newTicketMessage.trim()) return triggerToast(isAr ? 'يرجى ملء جميع الحقول' : 'Please fill all fields');
+                                        if (!currentUser) return triggerToast(isAr ? 'يرجى تسجيل الدخول لإرسال تذكرة دعم.' : 'Please log in to submit a support ticket.', 'error');
+                                        if (!newTicketSubject.trim() || !newTicketMessage.trim()) return triggerToast(isAr ? 'يرجى ملء جميع الحقول' : 'Please fill all fields', 'error');
                                         
                                         try {
                                           const { data: ticket, error: ticketError } = await supabase.from('support_tickets').insert({ user_id: currentUser.id, subject: newTicketSubject }).select().single();
@@ -1457,9 +1603,10 @@ export default function DashboardPage() {
                                           setNewTicketSubject('');
                                           setNewTicketMessage('');
                                           setTickets([ticket, ...tickets]);
-                                          triggerToast(isAr ? 'تم فتح التذكرة بنجاح' : 'Ticket opened successfully');
+                                          triggerToast(isAr ? 'تم إرسال تذكرتك بنجاح ✅' : 'Ticket opened successfully ✅', 'success');
                                         } catch (err: any) {
-                                          triggerToast(err.message);
+                                          console.error('Ticket submission error:', err);
+                                          triggerToast(isAr ? 'تعذّر إرسال التذكرة. يرجى المحاولة مرة أخرى.' : 'Failed to submit ticket. Please try again.', 'error');
                                         }
                                       }} className="space-y-3">
                                         <input 
@@ -1586,10 +1733,12 @@ export default function DashboardPage() {
 
                       </main>
 
-      {/* Success Notification Toast Popup */}
+      {/* Notification Toast Popup */}
       {showToast && (
-        <div className="fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium">
-          <span className="size-5 rounded-full bg-deumah-green-700 text-white flex items-center justify-center font-bold text-xs font-heading">✓</span>
+        <div className={`fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 ${toastType === 'error' ? 'bg-red-600' : 'bg-deumah-navy-950'} border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium`}>
+          <span className={`size-5 rounded-full ${toastType === 'error' ? 'bg-white text-red-600' : 'bg-deumah-green-700 text-white'} flex items-center justify-center font-bold text-xs font-heading`}>
+            {toastType === 'error' ? '!' : '✓'}
+          </span>
           <span className="text-xs font-semibold">{toastMsg}</span>
         </div>
       )}

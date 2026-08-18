@@ -35,7 +35,7 @@ const CITIES_MAP: Record<string, { en: string; ar: string }> = {
 };
 
 export function DeumahHeader() {
-  const t = useTranslations('Nav');
+  const t = useTranslations('nav');
   const locale = useLocale();
   const pathname = usePathname();
   const searchParams = useSearchParams();

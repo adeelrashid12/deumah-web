@@ -51,6 +51,7 @@ export interface OfferItem {
   created_at: string;
   buyer_name?: string;
   seller_name?: string;
+  currency?: string;
 }
 
 export default function DashboardPage() {
@@ -87,9 +88,33 @@ export default function DashboardPage() {
     return `${num.toLocaleString('en-US')} ${curr}`;
   };
 
+  const formatPriceWithCurrency = (price: number | string, currency: string | undefined, isAr: boolean): string => {
+    const numWithCommas = Number(price).toLocaleString('en-US');
+    const numPrice = isAr ? numWithCommas.replace(/[0-9]/g, w => ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'][+w]) : numWithCommas;
+    const curr = (currency || 'USD').toUpperCase().trim();
+    if (curr === 'YER') return isAr ? `${numPrice} ريال يمني` : `${numPrice} YER`;
+    if (curr === 'SAR') return isAr ? `${numPrice} ريال سعودي` : `${numPrice} SAR`;
+    return isAr ? `${numPrice} دولار` : `$${numPrice}`;
+  };
+
   // Tabs navigation state
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'listings' | 'drafts' | 'messages' | 'offers' | 'saved' | 'support' | 'profile' | 'settings'>('listings');
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleTabClick = (tabId: string) => {
+    setActiveTab(tabId as any);
+    if (window.innerWidth < 768 && contentRef.current) {
+      setTimeout(() => {
+        const yOffset = -20; 
+        const element = contentRef.current;
+        if (element) {
+          const y = element.getBoundingClientRect().top + window.scrollY + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }, 50);
+    }
+  };
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -218,7 +243,7 @@ export default function DashboardPage() {
           supabase.from('listings').select('*').eq('owner_id', user.id).order('created_at', { ascending: false }),
           supabase.from('messages').select('*').eq('sender_id', user.id),
           supabase.from('messages').select('*').eq('receiver_id', user.id),
-          supabase.from('offers').select('*').or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order('created_at', { ascending: false }),
+          supabase.from('offers').select('*, listings(title_en, title_ar, currency)').or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`).order('created_at', { ascending: false }),
           supabase.from('favorites').select('listing_id, listings(id, title_en, title_ar, price, currency, images, type)').eq('user_id', user.id).order('created_at', { ascending: false }),
           supabase.from('support_tickets').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         ]);
@@ -317,7 +342,8 @@ export default function DashboardPage() {
             
             return {
               ...off,
-              listing_title: lData ? (isAr ? lData.title_ar : lData.title_en) : 'Ad',
+              listing_title: (off.listings as any) ? (isAr ? (off.listings as any).title_ar : (off.listings as any).title_en) : (lData ? (isAr ? lData.title_ar : lData.title_en) : 'Ad'),
+              currency: (off.listings as any)?.currency || lData?.currency || 'USD',
               buyer_name: off.buyer_id === user.id ? (isAr ? 'أنت' : 'You') : (pData ? (pData.full_name || pData.email.split('@')[0]) : 'Buyer'),
               seller_name: off.seller_id === user.id ? (isAr ? 'أنت' : 'You') : (pData ? (pData.full_name || pData.email.split('@')[0]) : 'Seller')
             };
@@ -465,10 +491,21 @@ export default function DashboardPage() {
     }
 
     try {
-      const { error } = await supabase.rpc('send_chat_message', {
-        p_listing_id: thread.listing_id,
-        p_receiver_id: thread.other_user_id,
-        p_message: replyText
+      // ENFORCEMENT: Server-side check before insertion to catch recent blocks
+      const { data: blockCheck } = await supabase.from('user_blocks')
+        .select('id')
+        .or(`and(blocker_id.eq.${thread.other_user_id},blocked_id.eq.${currentUser.id}),and(blocker_id.eq.${currentUser.id},blocked_id.eq.${thread.other_user_id})`)
+        .limit(1);
+        
+      if (blockCheck && blockCheck.length > 0) {
+         triggerToast(isAr ? 'لا يمكنك إرسال رسائل. يوجد حظر بينك وبين هذا المستخدم.' : 'Cannot send message. A block exists between you and this user.', 'error');
+         return;
+      }
+      const { error } = await supabase.from('messages').insert({
+        listing_id: thread.listing_id,
+        sender_id: currentUser.id,
+        receiver_id: thread.other_user_id,
+        message: replyText
       });
 
       if (error) throw error;
@@ -486,6 +523,7 @@ export default function DashboardPage() {
   const [editTitleEn, setEditTitleEn] = useState('');
   const [editTitleAr, setEditTitleAr] = useState('');
   const [editPrice, setEditPrice] = useState('');
+  const [editCurrency, setEditCurrency] = useState('USD');
   const [editCategory, setEditCategory] = useState('');
 
   const openEditModal = (item: ListingItem) => {
@@ -493,6 +531,8 @@ export default function DashboardPage() {
     setEditTitleEn(item.titleEn || '');
     setEditTitleAr(item.titleAr || '');
     setEditPrice(item.price ? item.price.toString().replace(/[^0-9.]/g, '') : '');
+    const currency = (item.price || '').includes('YER') ? 'YER' : 'USD';
+    setEditCurrency(currency);
     setEditCategory(item.category || 'cars');
   };
 
@@ -517,7 +557,7 @@ export default function DashboardPage() {
         ...l,
         titleEn: editTitleEn,
         titleAr: editTitleAr,
-        price: `${editPrice} USD`,
+        price: `${editPrice} ${editCurrency}`,
         category: editCategory
       } : l));
 
@@ -784,7 +824,7 @@ export default function DashboardPage() {
             { id: 'messages', label: isAr ? 'الرسائل الواردة' : 'Inbox Messages', value: threads.length, icon: '💬' },
             { id: 'offers', label: isAr ? 'طلبات معلقة' : 'Pending Requests', value: offersList.filter(o => o.status === 'pending').length, icon: '⏳' }
           ].map((stat, idx) => (
-            <button key={idx} type="button" onClick={() => setActiveTab(stat.id as never)} className="bg-white border border-deumah-gray-200 rounded-deumah p-3 flex items-center gap-3 shadow-xs hover:border-deumah-green-500 transition cursor-pointer text-left rtl:text-right w-full">
+            <button key={idx} type="button" onClick={() => handleTabClick(stat.id)} className="bg-white border border-deumah-gray-200 rounded-deumah p-3 flex items-center gap-3 shadow-xs hover:border-deumah-green-500 transition cursor-pointer text-left rtl:text-right w-full">
               <span className="text-xl shrink-0">{stat.icon}</span>
               <div>
                 <span className="block text-[9px] font-bold text-deumah-gray-400 uppercase tracking-wider leading-none mb-1">
@@ -815,7 +855,7 @@ export default function DashboardPage() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id as never)}
+                onClick={() => handleTabClick(tab.id)}
                 className={`bg-white rounded-deumah border p-4 shadow-xs hover:shadow-sm transition flex items-center justify-between group cursor-pointer text-left rtl:text-right ${
                   activeTab === tab.id ? 'border-deumah-green-500 bg-deumah-green-50/30' : 'border-deumah-gray-200 hover:border-deumah-gray-300'
                 }`}
@@ -855,7 +895,7 @@ export default function DashboardPage() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id as never)}
+                onClick={() => handleTabClick(tab.id)}
                 className={`w-full text-left rtl:text-right px-4 py-2.5 rounded-deumah-sm text-xs font-bold transition flex items-center gap-2.5 ${
                   activeTab === tab.id
                     ? 'bg-deumah-green-700 text-white shadow-sm'
@@ -868,7 +908,7 @@ export default function DashboardPage() {
           </aside>
 
           {/* Main Dashboard Canvas Panel */}
-          <div className="bg-white rounded-deumah border border-deumah-gray-200 p-5 shadow-sm min-h-[420px]">
+          <div ref={contentRef} className="bg-white rounded-deumah border border-deumah-gray-200 p-5 shadow-sm min-h-[420px]">
             
             {/* MY LISTINGS TAB */}
             {activeTab === 'listings' && (
@@ -1096,8 +1136,11 @@ export default function DashboardPage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-center mb-0.5">
-                                  <h4 className={`text-xs font-extrabold truncate ${isActive ? 'text-deumah-green-700' : 'text-deumah-navy-950'}`}>
+                                  <h4 className={`text-xs font-extrabold truncate flex items-center gap-1 ${isActive ? 'text-deumah-green-700' : 'text-deumah-navy-950'}`}>
                                     {thread.other_user_name}
+                                    {mutedUsers.includes(thread.other_user_id) && (
+                                      <span className="text-[10px] opacity-70" title={isAr ? 'تم كتم الإشعارات' : 'Muted'}>🔇</span>
+                                    )}
                                   </h4>
                                 </div>
                                 <p className="text-[10px] text-deumah-gray-500 font-bold truncate mb-1 bg-deumah-gray-100/80 inline-block px-1.5 py-0.5 rounded">
@@ -1342,7 +1385,7 @@ export default function DashboardPage() {
                           
                           <div className="flex flex-col sm:items-end gap-2 shrink-0">
                             <div className="text-xl font-black text-deumah-green-700">
-                              ${offer.amount.toLocaleString()}
+                              {formatPriceWithCurrency(offer.amount, offer.listings?.currency || 'USD', isAr)}
                             </div>
                             
                             {!isOutgoing && offer.status === 'pending' && (
@@ -1735,7 +1778,7 @@ export default function DashboardPage() {
 
       {/* Notification Toast Popup */}
       {showToast && (
-        <div className={`fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 ${toastType === 'error' ? 'bg-red-600' : 'bg-deumah-navy-950'} border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium`}>
+        <div className={`fixed top-24 left-6 rtl:left-auto rtl:right-6 z-50 ${toastType === 'error' ? 'bg-red-600' : 'bg-deumah-navy-950'} border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium`}>
           <span className={`size-5 rounded-full ${toastType === 'error' ? 'bg-white text-red-600' : 'bg-deumah-green-700 text-white'} flex items-center justify-center font-bold text-xs font-heading`}>
             {toastType === 'error' ? '!' : '✓'}
           </span>
@@ -1781,7 +1824,7 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-deumah-gray-600 mb-1">{isAr ? 'السعر (USD)' : 'Price (USD)'}</label>
+                  <label className="block text-deumah-gray-600 mb-1">{isAr ? `السعر (${editCurrency})` : `Price (${editCurrency})`}</label>
                   <input
                     type="number"
                     value={editPrice}

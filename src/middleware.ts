@@ -5,7 +5,10 @@ export default createMiddleware({
   locales: ['en', 'ar'],
 
   // Used when no locale matches
-  defaultLocale: 'en',
+  defaultLocale: 'ar',
+
+  // Force Arabic default by ignoring browser language
+  localeDetection: false,
 
   // Disable prefixing for default locale if desired (we keep prefixing enabled for clean URLs)
   localePrefix: 'always'

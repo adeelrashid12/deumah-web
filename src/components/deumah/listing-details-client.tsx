@@ -7,6 +7,11 @@ import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { Link } from '@/i18n/navigation';
 import { supabase } from '@/lib/supabase';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { arSA } from 'date-fns/locale';
+
+registerLocale('ar', arSA);
 import Lightbox from "yet-another-react-lightbox";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import Counter from "yet-another-react-lightbox/plugins/counter";
@@ -59,6 +64,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
   const [isSaved, setIsSaved] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -82,6 +88,16 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
           .then(({ data }) => {
             if (data && active) setIsSaved(true);
           });
+          
+        // Check blocks
+        const ownerId = (item as any).owner_id || (item as any).ownerId;
+        if (ownerId) {
+          supabase.from('user_blocks').select('id')
+            .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${ownerId}),and(blocker_id.eq.${ownerId},blocked_id.eq.${user.id})`)
+            .then(({ data }) => {
+              if (data && data.length > 0 && active) setIsBlocked(true);
+            });
+        }
       }
     });
 
@@ -115,14 +131,14 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
   const isOwner = currentUser && (currentUser.id === (item as any).ownerId || currentUser.id === (item as any).owner_id);
 
   // Booking Calendar Scheduler state (for Rent items)
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
   // Calculate rental cost dynamically in real-time
   const rentalDetails = useMemo(() => {
     if (!startDate || !endDate) return null;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = startDate;
+    const end = endDate;
     const timeDiff = end.getTime() - start.getTime();
     if (timeDiff <= 0) return null;
 
@@ -137,10 +153,11 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
     try {
       if (currentUser) {
-        const { error } = await supabase.rpc('send_chat_message', {
-          p_listing_id: item.id,
-          p_receiver_id: (item as any).owner_id || (item as any).ownerId || null,
-          p_message: messageText
+        const { error } = await supabase.from('messages').insert({
+          listing_id: item.id,
+          sender_id: currentUser.id,
+          receiver_id: (item as any).owner_id || (item as any).ownerId || null,
+          message: messageText
         });
 
         if (error) {
@@ -182,13 +199,15 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
       // Send notification to the seller
       const sellerId = (item as any).owner_id || (item as any).ownerId;
       if (sellerId) {
+        const formattedAmountAr = formatPriceWithCurrency(amount, (item as any).currency, true);
+        const formattedAmountEn = formatPriceWithCurrency(amount, (item as any).currency, false);
         await supabase.from('notifications').insert({
           user_id: sellerId,
           type: 'offer',
           title_en: 'New Offer Received!',
           title_ar: 'تم تلقي عرض جديد!',
-          message_en: `You received a new offer of ${amount} for your listing.`,
-          message_ar: `لقد تلقيت عرضاً جديداً بقيمة ${amount} لإعلانك.`,
+          message_en: `You received a new offer of ${formattedAmountEn} for your listing.`,
+          message_ar: `لقد تلقيت عرضاً جديداً بقيمة ${formattedAmountAr} لإعلانك.`,
           listing_id: item.id,
           read: false
         });
@@ -416,20 +435,26 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-deumah-gray-500 uppercase mb-1">{t('startDate')}</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={e => setStartDate(e.target.value)}
+                    <DatePicker
+                      selected={startDate}
+                      onChange={(date) => setStartDate(date)}
+                      locale={isAr ? "ar" : "en-US"}
+                      dateFormat="yyyy/MM/dd"
+                      minDate={new Date()}
                       className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2.5 outline-none focus:border-deumah-green-600 bg-transparent transition"
+                      placeholderText={isAr ? "اختر تاريخ البداية" : "Select start date"}
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-deumah-gray-500 uppercase mb-1">{t('endDate')}</label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={e => setEndDate(e.target.value)}
+                    <DatePicker
+                      selected={endDate}
+                      onChange={(date) => setEndDate(date)}
+                      locale={isAr ? "ar" : "en-US"}
+                      dateFormat="yyyy/MM/dd"
+                      minDate={startDate || new Date()}
                       className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3 py-2.5 outline-none focus:border-deumah-green-600 bg-transparent transition"
+                      placeholderText={isAr ? "اختر تاريخ النهاية" : "Select end date"}
                     />
                   </div>
                 </div>
@@ -460,9 +485,12 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                     }
                     
                     const amount = rentalDetails.totalCost;
+                    const formattedAmount = formatPriceWithCurrency(amount, (item as any).currency, isAr);
+                    const startStr = startDate ? startDate.toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : '';
+                    const endStr = endDate ? endDate.toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : '';
                     const msg = isAr 
-                      ? `طلب حجز تأجير من ${startDate} إلى ${endDate} (${rentalDetails.daysCount} أيام) بإجمالي ${amount} ${(item as any).currency || 'USD'}.`
-                      : `Rental booking request from ${startDate} to ${endDate} (${rentalDetails.daysCount} days) for a total of ${amount} ${(item as any).currency || 'USD'}.`;
+                      ? `طلب حجز تأجير من ${startStr} إلى ${endStr} (${rentalDetails.daysCount} أيام) بإجمالي ${formattedAmount}.`
+                      : `Rental booking request from ${startStr} to ${endStr} (${rentalDetails.daysCount} days) for a total of ${formattedAmount}.`;
                     
                     try {
                       const sellerId = (item as any).owner_id || (item as any).ownerId;
@@ -568,7 +596,17 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
               </div>
 
               {/* Message form or Owner Management Box */}
-              {isOwner ? (
+              {isBlocked ? (
+                <div className="bg-red-50 p-6 rounded-deumah border border-red-200 shadow-sm text-center">
+                  <div className="text-4xl mb-3 opacity-80">🚫</div>
+                  <h3 className="text-sm font-bold text-red-700 mb-2">
+                    {isAr ? 'لا يمكنك التفاعل مع هذا المستخدم' : 'You cannot interact with this user'}
+                  </h3>
+                  <p className="text-[11px] text-red-600/80 font-bold">
+                    {isAr ? 'تم تقييد التفاعل بسبب الحظر المتبادل.' : 'Interaction is restricted due to a block.'}
+                  </p>
+                </div>
+              ) : isOwner ? (
                 <div className="bg-deumah-navy-950 text-white p-4 rounded-deumah-sm space-y-2.5 border border-white/10 shadow-xs">
                   <div className="flex items-center gap-2 text-[11px] font-extrabold text-deumah-gold-500 uppercase tracking-wider">
                     <span>⭐ {isAr ? 'إعلانك الخاص' : 'YOUR OWN LISTING'}</span>

@@ -546,6 +546,19 @@ export default function AdminPage() {
 
                             <button
                               type="button"
+                              onClick={() => {
+                                if(confirm(isAr ? 'هل أنت متأكد من حظر هذا المستخدم؟' : 'Are you sure you want to ban this user?')) {
+                                  handleUpdateUserStatus(item.owner_id, 'banned');
+                                  handleUpdateStatus(item.id, 'rejected');
+                                }
+                              }}
+                              className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded transition cursor-pointer shadow-xs font-bold"
+                            >
+                              🚫 {isAr ? 'حظر المستخدم' : 'Ban User'}
+                            </button>
+
+                            <button
+                              type="button"
                               onClick={() => handleDeleteListing(item.id)}
                               className="px-3 py-1.5 border border-deumah-gray-200 text-red-600 hover:bg-red-50 rounded transition cursor-pointer"
                             >

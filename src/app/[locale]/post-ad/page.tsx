@@ -28,6 +28,7 @@ function PostAdForm() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [globalPricingMethod, setGlobalPricingMethod] = useState('fixed');
   const [currency, setCurrency] = useState<'USD' | 'YER'>('USD');
   const [billingPeriod, setBillingPeriod] = useState('day');
   const [governorate, setGovernorate] = useState('sanaa_city');
@@ -125,6 +126,7 @@ function PostAdForm() {
         setTitle(isAr ? data.title_ar : data.title_en || '');
         setDescription(isAr ? data.description_ar : data.description_en || '');
         setPrice(data.price?.toString() || '');
+        setGlobalPricingMethod(data.specifications?.globalPricingMethod || 'fixed');
         setCategory(data.category || 'cars');
         setTransactionType(data.type || 'rent');
         setCurrency(data.currency || 'USD');
@@ -176,6 +178,7 @@ function PostAdForm() {
     else if (category === 'tools') specs = { brand: toolsBrand, model: toolsModel };
     else if (category === 'services') specs = { type: serviceType, area: serviceArea, pricingMethod: servicePricing };
     
+    specs.globalPricingMethod = globalPricingMethod;
     specs.contact = { call: contactCall, chat: contactChat, whatsapp: contactWhatsApp, phoneNumber: contactPhoneNum, whatsappNumber: contactWhatsAppNum };
     return specs;
   };
@@ -198,7 +201,7 @@ function PostAdForm() {
         title_ar: title || 'إعلان مسودة',
         description_en: description,
         description_ar: description,
-        price: Number(price) || 0,
+        price: globalPricingMethod === 'contact' ? 0 : (Number(price) || 0),
         currency: currency,
         category: category,
         type: transactionType,
@@ -377,7 +380,8 @@ function PostAdForm() {
   // Final Publish Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !price || !description.trim()) {
+    const finalPrice = globalPricingMethod === 'contact' ? 0 : (Number(price) || 0);
+    if (!title.trim() || (globalPricingMethod === 'fixed' && !finalPrice) || !description.trim()) {
       setErrorMsg(isAr ? 'يرجى تعبئة كافة الحقول الأساسية!' : 'Please fill out all required basic fields!');
       return;
     }
@@ -411,6 +415,7 @@ function PostAdForm() {
         specs = { type: serviceType, area: serviceArea, pricingMethod: servicePricing };
       }
 
+      specs.globalPricingMethod = globalPricingMethod;
       specs.contact = {
         call: contactCall,
         chat: contactChat,
@@ -427,7 +432,7 @@ function PostAdForm() {
         title_ar: title,
         description_en: description,
         description_ar: description,
-        price: Number(price),
+        price: globalPricingMethod === 'contact' ? 0 : (Number(price) || 0),
         currency: currency,
         category: category,
         type: transactionType,
@@ -1038,7 +1043,6 @@ function PostAdForm() {
                               type="button"
                               disabled={index === photosList.length - 1}
                               onClick={() => movePhotoRight(index)}
-                              className="px-1.5 py-0.5 border border-deumah-gray-200 rounded hover:bg-deumah-gray-50 disabled:opacity-30 disabled:pointer-events-none"
                             >
                               ▶
                             </button>
@@ -1102,22 +1106,42 @@ function PostAdForm() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              {/* Price */}
-              <div className="sm:col-span-2">
+              {/* Pricing Method */}
+              <div>
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
-                  {isAr ? 'السعر' : 'Price'} *
+                  {isAr ? 'طريقة السعر' : 'Pricing Method'}
                 </label>
-                <input
-                  type="number"
-                  placeholder="e.g. 150"
-                  value={price}
-                  onChange={e => setPrice(e.target.value)}
-                  className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-3 outline-none focus:border-deumah-green-600"
-                  required
-                />
+                <select
+                  value={globalPricingMethod}
+                  onChange={e => setGlobalPricingMethod(e.target.value)}
+                  className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-3.5 py-3 outline-none focus:border-deumah-green-600 bg-white transition cursor-pointer font-semibold"
+                >
+                  <option value="fixed">{isAr ? 'سعر ثابت' : 'Fixed Price'}</option>
+                  <option value="negotiable">{isAr ? 'قابل للتفاوض' : 'Negotiable'}</option>
+                  <option value="contact">{isAr ? 'تواصل لمعرفة السعر' : 'Contact for Price'}</option>
+                </select>
               </div>
 
-              {/* Currency */}
+              {/* Price */}
+              {globalPricingMethod !== 'contact' && (
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
+                    {isAr ? 'السعر' : 'Price'} {globalPricingMethod === 'fixed' ? '*' : (isAr ? '(اختياري)' : '(Optional)')}
+                  </label>
+                  <input
+                    type="number"
+                    placeholder={globalPricingMethod === 'fixed' ? "e.g. 150" : ""}
+                    value={price}
+                    onChange={e => setPrice(e.target.value)}
+                    className="w-full text-sm border border-deumah-gray-200 rounded-deumah-sm px-4 py-3 outline-none focus:border-deumah-green-600"
+                    required={globalPricingMethod === 'fixed'}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Currency */}
+            <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className="block text-xs font-bold text-deumah-gray-500 uppercase tracking-wider mb-1.5">
                   {isAr ? 'العملة' : 'Currency'}

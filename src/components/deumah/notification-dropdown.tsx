@@ -8,9 +8,13 @@ import { Link } from '@/i18n/navigation';
 export interface Notification {
   id: string;
   type: string;
-  title: string;
-  content: string;
-  link: string;
+  title?: string;
+  content?: string;
+  title_en?: string;
+  title_ar?: string;
+  message_en?: string;
+  message_ar?: string;
+  link?: string;
   read: boolean;
   created_at: string;
 }
@@ -160,18 +164,36 @@ export function NotificationDropdown({ userId }: { userId: string }) {
                     onClick={() => setOpen(false)}
                     className={`block p-4 hover:bg-deumah-gray-50 transition ${!notif.read ? 'bg-deumah-green-50/30' : ''}`}
                   >
-                    <div className="flex gap-3">
-                    <div className="text-xl shrink-0 mt-0.5">{getIcon(notif.type)}</div>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-deumah-navy-950">{notif.title}</h4>
-                      <p className="text-[11px] text-deumah-gray-500 mt-1 line-clamp-2 leading-relaxed">
-                        {notif.content}
-                      </p>
-                      <span className="text-[9px] font-bold text-deumah-gray-400 mt-2 block">
-                        {new Date(notif.created_at).toLocaleString(isAr ? 'ar-EG' : 'en-US')}
-                      </span>
+                    <div className="flex gap-3 text-start">
+                      <div className="text-xl shrink-0 mt-0.5">{getIcon(notif.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-extrabold text-deumah-navy-950 truncate">
+                          {(() => {
+                            let title = isAr ? (notif.title_ar || notif.title || notif.title_en) : (notif.title_en || notif.title || notif.title_ar);
+                            if (isAr && title === "New Offer Received") return "تم استلام عرض جديد";
+                            if (isAr && title === "Offer Accepted") return "تم قبول العرض";
+                            return title;
+                          })()}
+                        </h4>
+                        <p className="text-[11px] text-deumah-gray-500 mt-1 line-clamp-2 leading-relaxed">
+                          {(() => {
+                            let msg = isAr ? (notif.message_ar || notif.content || notif.message_en) : (notif.message_en || notif.content || notif.message_ar);
+                            if (isAr && msg && msg.startsWith("You received an offer of")) {
+                              return msg.replace(/You received an offer of (.*?) for (.*?)$/, 'تلقيت عرضاً بقيمة $1 لـ $2');
+                            }
+                            if (isAr && msg && msg.startsWith("Your offer of")) {
+                              return msg.replace(/Your offer of (.*?) for (.*?) was accepted\./, 'تم قبول عرضك بقيمة $1 لـ $2.');
+                            }
+                            return msg;
+                          })()}
+                        </p>
+                        {notif.created_at && (
+                          <span className="text-[9px] font-bold text-deumah-gray-400 mt-2 block">
+                            {new Date(notif.created_at).toLocaleString(isAr ? 'ar-EG' : 'en-US')}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
                 </Link>
                 );
               })

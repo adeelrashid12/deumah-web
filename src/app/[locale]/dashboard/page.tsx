@@ -315,7 +315,7 @@ export default function DashboardPage() {
 
         // Bulk Fetch Details
         const [ { data: fetchedListings }, { data: fetchedProfiles } ] = await Promise.all([
-          listingIdsToFetch.size > 0 ? supabase.from('listings').select('id, title_en, title_ar').in('id', Array.from(listingIdsToFetch)) : Promise.resolve({ data: [] }),
+          listingIdsToFetch.size > 0 ? supabase.from('listings').select('id, title_en, title_ar, currency').in('id', Array.from(listingIdsToFetch)) : Promise.resolve({ data: [] }),
           userIdsToFetch.size > 0 ? supabase.from('profiles').select('id, full_name, email').in('id', Array.from(userIdsToFetch)) : Promise.resolve({ data: [] })
         ]);
 

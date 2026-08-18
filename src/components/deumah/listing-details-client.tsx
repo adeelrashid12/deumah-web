@@ -437,7 +437,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                     <label className="block text-xs font-bold text-deumah-gray-500 uppercase mb-1">{t('startDate')}</label>
                     <DatePicker
                       selected={startDate}
-                      onChange={(date) => setStartDate(date)}
+                      onChange={(date: Date | null) => setStartDate(date)}
                       locale={isAr ? "ar" : "en-US"}
                       dateFormat="yyyy/MM/dd"
                       minDate={new Date()}
@@ -449,7 +449,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
                     <label className="block text-xs font-bold text-deumah-gray-500 uppercase mb-1">{t('endDate')}</label>
                     <DatePicker
                       selected={endDate}
-                      onChange={(date) => setEndDate(date)}
+                      onChange={(date: Date | null) => setEndDate(date)}
                       locale={isAr ? "ar" : "en-US"}
                       dateFormat="yyyy/MM/dd"
                       minDate={startDate || new Date()}

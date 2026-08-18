@@ -144,10 +144,10 @@ export function DeumahHeader() {
       {mobileMenuOpen && (
         <>
           <div 
-            className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/60 z-[60] lg:hidden"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed top-0 right-0 rtl:right-auto rtl:left-0 h-full w-72 bg-deumah-navy-950 border-l rtl:border-l-0 rtl:border-r border-white/10 p-6 z-50 shadow-deumah-search flex flex-col justify-between lg:hidden transition-transform animate-slide-in">
+          <div className="fixed top-0 right-0 rtl:right-auto rtl:left-0 h-[100dvh] w-72 bg-deumah-navy-950 border-l rtl:border-l-0 rtl:border-r border-white/10 p-6 z-[70] shadow-deumah-search flex flex-col justify-between lg:hidden transition-transform animate-slide-in overflow-y-auto">
             <div className="space-y-6">
               <div className="flex justify-between items-center pb-4 border-b border-white/10">
                 <span className="font-bold font-heading text-lg">

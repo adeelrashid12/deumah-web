@@ -1385,7 +1385,7 @@ export default function DashboardPage() {
                           
                           <div className="flex flex-col sm:items-end gap-2 shrink-0">
                             <div className="text-xl font-black text-deumah-green-700">
-                              {formatPriceWithCurrency(offer.amount, offer.listings?.currency || 'USD', isAr)}
+                              {formatPriceWithCurrency(offer.amount, offer.currency || 'USD', isAr)}
                             </div>
                             
                             {!isOutgoing && offer.status === 'pending' && (

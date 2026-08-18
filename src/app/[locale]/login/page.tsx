@@ -204,7 +204,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Social Logins */}
+          {/*
           <div className="space-y-4">
             <div className="relative flex py-1 items-center">
               <div className="flex-grow border-t border-deumah-gray-200"></div>
@@ -233,6 +233,7 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
+          */}
 
           {/* Signup Redirect link */}
           <div className="text-center text-xs font-medium text-deumah-gray-500">

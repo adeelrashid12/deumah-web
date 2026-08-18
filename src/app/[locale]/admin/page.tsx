@@ -639,14 +639,53 @@ export default function AdminPage() {
                     {isAr ? 'المستخدمون المحظورون' : 'Blocked & Banned Users'}
                   </h2>
                 </div>
-                <div className="p-12 text-center border border-deumah-gray-200 rounded-deumah bg-deumah-gray-50 flex flex-col items-center justify-center gap-3 shadow-inner">
-                  <span className="text-4xl">🚫</span>
-                  <p className="text-sm font-bold text-deumah-navy-950">
-                    {isAr ? 'لا يوجد مستخدمون محظورون حالياً' : 'No blocked users currently'}
-                  </p>
-                  <p className="text-xs text-deumah-gray-500 max-w-sm mx-auto">
-                    {isAr ? 'ستظهر هنا قائمة الحسابات التي تم تعليقها أو حظرها من استخدام المنصة.' : 'Accounts that have been suspended or banned from using the platform will appear here.'}
-                  </p>
+                <div className="border border-deumah-gray-200 rounded-deumah overflow-hidden divide-y divide-deumah-gray-200">
+                  {users.filter(u => u.account_status === 'banned' || u.account_status === 'suspended').length === 0 ? (
+                    <div className="p-12 text-center border border-deumah-gray-200 rounded-deumah bg-deumah-gray-50 flex flex-col items-center justify-center gap-3 shadow-inner">
+                      <span className="text-4xl">🚫</span>
+                      <p className="text-sm font-bold text-deumah-navy-950">
+                        {isAr ? 'لا يوجد مستخدمون محظورون حالياً' : 'No blocked users currently'}
+                      </p>
+                      <p className="text-xs text-deumah-gray-500 max-w-sm mx-auto">
+                        {isAr ? 'ستظهر هنا قائمة الحسابات التي تم تعليقها أو حظرها من استخدام المنصة.' : 'Accounts that have been suspended or banned from using the platform will appear here.'}
+                      </p>
+                    </div>
+                  ) : (
+                    users.filter(u => u.account_status === 'banned' || u.account_status === 'suspended').map(u => (
+                      <div key={u.id} className="p-4 border border-deumah-gray-200 rounded-deumah flex items-center justify-between bg-white hover:bg-deumah-gray-50 transition shadow-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="size-10 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-lg font-heading uppercase">
+                            {u.full_name ? u.full_name.charAt(0) : 'U'}
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-extrabold text-deumah-navy-950 flex items-center gap-2">
+                              {u.full_name || (isAr ? 'مستخدم مجهول' : 'Anonymous User')}
+                              {u.account_status === 'banned' && (
+                                <span className="bg-red-100 text-red-700 text-[9px] px-1.5 py-0.5 rounded uppercase">{isAr ? 'محظور' : 'Banned'}</span>
+                              )}
+                              {u.account_status === 'suspended' && (
+                                <span className="bg-yellow-100 text-yellow-700 text-[9px] px-1.5 py-0.5 rounded uppercase">{isAr ? 'معلق' : 'Suspended'}</span>
+                              )}
+                            </h4>
+                            <p className="text-[10px] text-deumah-gray-500 font-medium mt-1">✉️ {u.email || (isAr ? 'بدون بريد' : 'No email')} • 📱 {u.phone || (isAr ? 'بدون رقم' : 'No phone')}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={() => {
+                              if(confirm(isAr ? 'هل أنت متأكد من إلغاء حظر هذا المستخدم؟' : 'Are you sure you want to unban this user?')) {
+                                handleUpdateUserStatus(u.id, 'active');
+                              }
+                            }}
+                            className="text-xs font-bold bg-deumah-green-700 text-white hover:bg-deumah-green-600 px-4 py-2 rounded transition cursor-pointer shadow-sm"
+                          >
+                            🔄 {isAr ? 'إلغاء الحظر (تنشيط)' : 'Unban User'}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}

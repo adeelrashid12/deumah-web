@@ -687,7 +687,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
       {/* Message Success Toast Popup */}
       {showToast && (
-        <div className="fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium whitespace-nowrap">
           <span className="size-5 rounded-full bg-deumah-green-700 text-white flex items-center justify-center font-bold text-xs">✓</span>
           <span className="text-xs font-semibold">{t('messageSuccess')}</span>
         </div>
@@ -750,7 +750,7 @@ export function ListingDetailsClient({ item, locale }: ClientProps) {
 
       {/* Offer Toast */}
       {offerToast && (
-        <div className="fixed bottom-4 right-4 bg-deumah-green-700 text-white px-6 py-3 rounded-deumah-sm font-bold shadow-xl animate-fade-in z-50">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-deumah-green-700 text-white px-6 py-3 rounded-deumah-sm font-bold shadow-xl animate-fade-in whitespace-nowrap">
           {isAr ? '✅ تم إرسال العرض بنجاح!' : '✅ Offer submitted successfully!'}
         </div>
       )}

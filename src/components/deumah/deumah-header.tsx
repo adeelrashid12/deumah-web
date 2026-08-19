@@ -70,7 +70,7 @@ export function DeumahHeader() {
   };
 
   return (
-    <header className="bg-deumah-navy-950 text-white relative z-40">
+    <header className="bg-deumah-navy-950 text-white relative z-[60]">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="shrink-0">
           <img 

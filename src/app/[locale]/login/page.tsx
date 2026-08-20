@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
+import { getLocalizedAuthError } from '@/utils/auth-errors';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -72,7 +73,7 @@ export default function LoginPage() {
 
     } catch (err: any) {
       setLoading(false);
-      setErrorMsg(err.message || (isAr ? 'خطأ في البريد الإلكتروني/رقم الهاتف أو كلمة المرور!' : 'Invalid email/phone or password!'));
+      setErrorMsg(getLocalizedAuthError(err.message || '', isAr));
     }
   };
 

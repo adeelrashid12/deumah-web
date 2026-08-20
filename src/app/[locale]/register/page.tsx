@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
+import { getLocalizedAuthError } from '@/utils/auth-errors';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -81,19 +82,15 @@ export default function RegisterPage() {
 
     } catch (err: any) {
       setLoading(false);
-      let finalErr = isAr ? 'حدث خطأ أثناء إنشاء الحساب.' : 'An error occurred during registration.';
+      let errMsg = '';
       if (err?.message && typeof err.message === 'string' && err.message !== '{}') {
-        if (isAr && err.message.toLowerCase().includes('already registered')) {
-          finalErr = 'يوجد حساب مسجل بهذا البريد الإلكتروني';
-        } else {
-          finalErr = err.message;
-        }
+        errMsg = err.message;
       } else if (typeof err === 'string' && err !== '{}') {
-        finalErr = err;
+        errMsg = err;
       } else if (err?.msg && typeof err.msg === 'string') {
-        finalErr = err.msg;
+        errMsg = err.msg;
       }
-      setErrorMsg(finalErr);
+      setErrorMsg(getLocalizedAuthError(errMsg, isAr));
     }
   };
 

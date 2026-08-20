@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getLocalizedAuthError } from '@/utils/auth-errors';
 import { useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
@@ -46,7 +47,7 @@ export default function UpdatePasswordPage() {
         router.push('/dashboard');
       }, 2000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Error updating password');
+      setErrorMsg(getLocalizedAuthError(err.message || '', isAr));
     } finally {
       setLoading(false);
     }

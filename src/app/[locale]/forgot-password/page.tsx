@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getLocalizedAuthError } from '@/utils/auth-errors';
 import { useLocale } from 'next-intl';
 import { DeumahHeader } from '@/components/deumah/deumah-header';
 import { Footer } from '@/components/layout/Footer';
@@ -30,7 +31,7 @@ export default function ForgotPasswordPage() {
       if (error) throw error;
       setSuccessMsg(isAr ? 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.' : 'Password reset link sent to your email.');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Error sending reset email');
+      setErrorMsg(getLocalizedAuthError(err.message || '', isAr));
     } finally {
       setLoading(false);
     }

@@ -950,7 +950,7 @@ export default function AdminPage() {
 
       {/* Success Notification Toast Popup */}
       {showToast && (
-        <div className="fixed bottom-6 left-6 rtl:left-auto rtl:right-6 z-50 bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] bg-deumah-navy-950 border border-white/10 text-white px-5 py-3 rounded-deumah shadow-deumah-search flex items-center gap-3 animate-slide-in font-medium whitespace-nowrap">
           <span className="size-5 rounded-full bg-deumah-green-700 text-white flex items-center justify-center font-bold text-xs font-heading">✓</span>
           <span className="text-xs font-semibold">{toastMsg}</span>
         </div>
